@@ -1,6 +1,14 @@
 {
-    "memo": "7ff14936b7e28e34cda92694b073200ed70761dddf7ccb37674a76f49c6ce5ff",
+    "memo": "17a3884c7f4f5ecb27608fe387cbaad91b7f165ceeea554746e63c4d21131363",
     "projects": [
+        {
+            "name": "github.com/Sirupsen/logrus",
+            "version": "v0.11.5",
+            "revision": "ba1b36c82c5e05c4f912a88eab0dcd91a171688f",
+            "packages": [
+                "."
+            ]
+        },
         {
             "name": "github.com/aws/aws-sdk-go",
             "version": "v1.8.10",
