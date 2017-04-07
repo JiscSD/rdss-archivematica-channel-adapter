@@ -1,0 +1,12 @@
+{
+  "name": "minikine",
+  "version": "0.0.1",
+  "main": "minikine.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.39.0",
+    "kinesalite": "^1.11.6"
+  }
+}
