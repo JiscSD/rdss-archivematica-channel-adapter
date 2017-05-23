@@ -1,7 +1,6 @@
 package amclient
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,13 +8,15 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
+	"github.com/gorilla/schema"
 	"github.com/spf13/afero"
 )
 
 const (
 	userAgent = "rdss-archivematica-channel-adapter"
-	mediaType = "application/json"
+	mediaType = "application/x-www-form-urlencoded"
 )
 
 // Client manages communication with Archivematica API.
@@ -120,14 +121,11 @@ func (c *Client) NewRequest(ctx context.Context, method, urlStr string, body int
 
 	u := c.BaseURL.ResolveReference(rel)
 
-	buf := new(bytes.Buffer)
-	if body != nil {
-		err = json.NewEncoder(buf).Encode(body)
-		if err != nil {
-			return nil, err
-		}
-	}
-	req, err := http.NewRequest(method, u.String(), buf)
+	form := url.Values{}
+	encoder := schema.NewEncoder()
+	encoder.Encode(body, form)
+
+	req, err := http.NewRequest(method, u.String(), strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +133,7 @@ func (c *Client) NewRequest(ctx context.Context, method, urlStr string, body int
 	req.Header.Add("Content-Type", mediaType)
 	req.Header.Add("Accept", mediaType)
 	req.Header.Add("User-Agent", c.UserAgent)
-	req.Header.Add("Authentication", fmt.Sprintf("ApiKey %s:%s", c.User, c.Key))
+	req.Header.Add("Authorization", fmt.Sprintf("ApiKey %s:%s", c.User, c.Key))
 	return req, nil
 }
 

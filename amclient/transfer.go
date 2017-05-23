@@ -3,6 +3,8 @@ package amclient
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"time"
 )
 
 const transferBasePath = "api/transfer"
@@ -38,6 +40,13 @@ func (s *TransferServiceOp) Start(ctx context.Context, r *TransferStartRequest) 
 func (s *TransferServiceOp) Approve(ctx context.Context, r *TransferApproveRequest) (*Response, error) {
 	path := fmt.Sprintf("%s/approve/", transferBasePath)
 
+	r.Directory = filepath.Base(r.Directory)
+
+	// TODO: instead of wait we should probably hit the unnaproved/ endpoint and
+	// retry until the transfer becomes available as done in automation tools:
+	// https://git.io/vHqAu.
+	time.Sleep(time.Second * 3)
+
 	req, err := s.client.NewRequest(ctx, "POST", path, r)
 	if err != nil {
 		return nil, err
@@ -50,13 +59,13 @@ func (s *TransferServiceOp) Approve(ctx context.Context, r *TransferApproveReque
 
 // TransferStartRequest represents a request to start a transfer.
 type TransferStartRequest struct {
-	Name  string   `json:"name"`
-	Type  string   `json:"type"`
-	Paths []string `json:"paths"`
+	Name  string   `schema:"name"`
+	Type  string   `schema:"type"`
+	Paths []string `schema:"paths"`
 }
 
 // TransferApproveRequest represents a request to approve a transfer.
 type TransferApproveRequest struct {
-	Type      string `json:"type"`
-	Directory string `json:"directory"`
+	Type      string `schema:"type"`
+	Directory string `schema:"directory"`
 }

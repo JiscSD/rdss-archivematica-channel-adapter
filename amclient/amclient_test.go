@@ -3,6 +3,7 @@ package amclient
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -88,5 +89,40 @@ func TestCustomUserAgent(t *testing.T) {
 	expected := fmt.Sprintf("%s+%s", "testing", userAgent)
 	if got := c.UserAgent; got != expected {
 		t.Errorf("New() UserAgent = %s; expected %s", got, expected)
+	}
+}
+
+func TestNewRequest(t *testing.T) {
+	var (
+		baseURL  = "http://127.0.0.1"
+		user     = "Us3r"
+		password = "Pa33w0rd"
+	)
+
+	c, _ := New(nil, baseURL, user, password)
+
+	inURL, outURL := "/foo", baseURL+"/foo"
+	inBody, outBody := &TransferStartRequest{Name: "My transfer", Type: "standard"}, `name=My+transfer&type=standard`
+	req, _ := c.NewRequest(context.Background(), "GET", inURL, inBody)
+
+	// Test that relative URL was expanded.
+	if got, want := req.URL.String(), outURL; got != want {
+		t.Errorf("NewRequest(%q) URL is %v, want %v", inURL, got, want)
+	}
+
+	// Test that body was URL-encoded
+	body, _ := ioutil.ReadAll(req.Body)
+	if got, want := string(body), outBody; got != want {
+		t.Errorf("NewRequest(%q) Body is %v, want %v", inBody, got, want)
+	}
+
+	// Test that default user-agent is attached to the request.
+	if got, want := req.Header.Get("User-Agent"), c.UserAgent; got != want {
+		t.Errorf("NewRequest() User-Agent is %v, want %v", got, want)
+	}
+
+	// Test that the Authorization header is included.
+	if got, want := req.Header.Get("Authorization"), fmt.Sprintf("ApiKey %s:%s", user, password); got != want {
+		t.Fatalf("NewRequest() Authorization header: %v, want %v", got, want)
 	}
 }
