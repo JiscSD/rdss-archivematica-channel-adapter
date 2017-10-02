@@ -3,7 +3,7 @@ FILES?=$$(find . -name '*.go' | grep -v vendor)
 
 VERSION := $(shell git describe --tags --always --dirty)
 
-default: test vet
+default: testrace vet
 
 tools:
 	go get -u github.com/golang/dep/...

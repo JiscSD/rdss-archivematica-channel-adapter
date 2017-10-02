@@ -7,6 +7,6 @@ install:
   - go get github.com/mattn/goveralls
 script:
   - $HOME/gopath/bin/goveralls -service=travis-ci
-  - make vet vendor-status test
+  - make vet vendor-status testrace
 notifications:
   email: false

@@ -1,17 +1,22 @@
+// +build !race
+
+// Race detector disabled explicitly because MockDynamo is not safe.
+
 package kinesis
 
 import (
 	"errors"
 	"testing"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/backend"
-	"github.com/sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/aws/aws-sdk-go/service/kinesis"
 	"github.com/aws/aws-sdk-go/service/kinesis/kinesisiface"
+	"github.com/sirupsen/logrus"
 	"github.com/twitchscience/kinsumer/mocks"
+
+	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/backend"
 )
 
 func Test_processor_route_ErrorHandling(t *testing.T) {
