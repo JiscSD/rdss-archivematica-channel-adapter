@@ -1,9 +1,10 @@
 FROM golang:1.9.0-alpine as builder
 WORKDIR /go/src/github.com/JiscRDSS/rdss-archivematica-channel-adapter
 COPY . .
+# Don't use `make testrace`, it won't work in Alpine Linux!
 RUN set -x \
 	&& apk add --no-cache --virtual .build-deps make gcc musl-dev \
-	&& make \
+	&& make test vet \
 	&& make build
 
 FROM alpine:3.6
