@@ -41,22 +41,6 @@ func Test_handleMetadataCreateRequest_emptyFiles(t *testing.T) {
 	}
 }
 
-func Test_getFilename(t *testing.T) {
-	tests := []struct {
-		path string
-		want string
-	}{
-		{"https://foo12345.com/foobar.jpg", "foobar.jpg"},
-		{"https://foo12345.com/foo/bar/rrr", "foo/bar/rrr"},
-		{":invalid-url:", ""},
-	}
-	for _, tt := range tests {
-		if got := getFilename(tt.path); tt.want != got {
-			t.Errorf("getFilename(); want %v, got %v", tt.want, got)
-		}
-	}
-}
-
 func Test_describeDataset(t *testing.T) {
 	var (
 		ts   = getTransferSession(t)

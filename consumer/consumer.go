@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -88,22 +86,15 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 	// Process dataset metadata.
 	describeDataset(t, body)
 
-	for i, file := range body.ObjectFile {
-
-		// Extract filename from location.
-		name := getFilename(file.FileStorageLocation)
-		if name == "" {
-			c.logger.Errorf("Malformed file storage location: %s (position %d)", file.FileStorageLocation, i)
-			continue
-		}
-
-		// Add checksum metadata.
+	for _, file := range body.ObjectFile {
+		// Add checksum metadata. We're not going to verify checksums at this
+		// point because this is something meant to do by Archivematica.
 		for _, c := range file.FileChecksum {
 			switch c.ChecksumType {
 			case message.ChecksumTypeEnum_md5:
-				t.ChecksumMD5(name, c.ChecksumValue)
+				t.ChecksumMD5(file.FileName, c.ChecksumValue)
 			case message.ChecksumTypeEnum_sha256:
-				t.ChecksumSHA256(name, c.ChecksumValue)
+				t.ChecksumSHA256(file.FileName, c.ChecksumValue)
 			}
 		}
 
@@ -112,16 +103,16 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 		var err error
 		func() {
 			var f afero.File
-			f, err = t.Create(name)
+			f, err = t.Create(file.FileName)
 			if err != nil {
-				c.logger.Errorf("Error creating %s: %v", name, err)
+				c.logger.Errorf("Error creating %s: %v", file.FileName, err)
 				return
 			}
 			defer f.Close()
 			if err = downloadFile(c.logger, c.ctx, c.s3, http.DefaultClient, f, file.FileStorageType, file.FileStorageLocation); err != nil {
 				return
 			}
-			describeFile(t, name, &file)
+			describeFile(t, file.FileName, &file)
 		}()
 		if err != nil {
 			return err
@@ -155,7 +146,7 @@ func downloadFile(logger log.FieldLogger, ctx context.Context, s3Client s3.Objec
 	return nil
 }
 
-func downloadFileHTTP(ctx context.Context, httpClient *http.Client, target afero.File, storageLocation string) (int64, error) {
+func downloadFileHTTP(ctx context.Context, httpClient *http.Client, target io.Writer, storageLocation string) (int64, error) {
 	req, err := http.NewRequest("GET", storageLocation, nil)
 	if err != nil {
 		return 0, err
@@ -170,14 +161,6 @@ func downloadFileHTTP(ctx context.Context, httpClient *http.Client, target afero
 		return 0, fmt.Errorf("unexpected status code: %d (%s)", resp.StatusCode, resp.Status)
 	}
 	return io.Copy(target, resp.Body)
-}
-
-func getFilename(path string) string {
-	u, err := url.Parse(path)
-	if err != nil {
-		return ""
-	}
-	return strings.TrimPrefix(u.Path, "/")
 }
 
 // describeDataset maps properties from a research object into a CSV entry
