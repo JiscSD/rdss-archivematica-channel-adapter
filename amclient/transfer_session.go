@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -40,8 +42,9 @@ func NewTransferSession(c *Client, name string, depositFs afero.Fs) (*TransferSe
 		// is reached, an error is reaturned instead.
 		counter  = 1
 		maxTries = 20
-		nName    = name
 	)
+	name = safeFileName(name)
+	var nName = name
 	for {
 		err := depositFs.Mkdir(nName, os.FileMode(0755))
 		if err == nil {
@@ -389,4 +392,21 @@ func (c *ChecksumSet) Write() error {
 	}
 
 	return nil
+}
+
+var (
+	regexSeparators = regexp.MustCompile(`[ &_=+:]`)
+	regexLegal      = regexp.MustCompile(`[^[:alnum:]-.]`)
+)
+
+// safeFileName returns safe string that can be used in file names
+func safeFileName(str string) string {
+	name := path.Clean(path.Base(str))
+	name = strings.Trim(name, " ")
+	name = regexSeparators.ReplaceAllString(name, "-")
+	name = regexLegal.ReplaceAllString(name, "")
+	for strings.Contains(name, "--") {
+		name = strings.Replace(name, "--", "-", -1)
+	}
+	return name
 }

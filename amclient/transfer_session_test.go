@@ -15,13 +15,24 @@ import (
 func TestNewTransferSession(t *testing.T) {
 	c := getClient(t)
 	fs := afero.NewBasePathFs(afero.NewMemMapFs(), "/")
-	sess, err := NewTransferSession(c, "Test", fs)
-	if err != nil {
-		t.Error(err)
+
+	tests := []struct {
+		name string
+		want string
+	}{
+		{"Test1", "/Test1"},
+		{"_Test2", "/-Test2"},
+		{"Test/With/Slashes////", "/Slashes"},
+		{"Test:foobar", "/Test-foobar"},
 	}
-	want := "/Test"
-	if sess.Path != want {
-		t.Errorf("Want %s, have %s", want, sess.Path)
+	for _, tc := range tests {
+		sess, err := NewTransferSession(c, tc.name, fs)
+		if err != nil {
+			t.Error(err)
+		}
+		if sess.Path != tc.want {
+			t.Errorf("Want %s, have %s", tc.want, sess.Path)
+		}
 	}
 }
 
