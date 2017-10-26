@@ -3,7 +3,7 @@ WORKDIR /go/src/github.com/JiscRDSS/rdss-archivematica-channel-adapter
 COPY . .
 # Don't use `make testrace`, it won't work in Alpine Linux!
 RUN set -x \
-	&& apk add --no-cache --virtual .build-deps make gcc musl-dev \
+	&& apk add --no-cache --virtual .build-deps make gcc musl-dev git \
 	&& make test vet \
 	&& make build
 
