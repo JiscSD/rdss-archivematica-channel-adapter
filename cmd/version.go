@@ -21,7 +21,6 @@ func init() {
 	RootCmd.AddCommand(versionCmd)
 }
 
-
 func printVersion() {
 	fmt.Println(version.VERSION)
 }
