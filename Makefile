@@ -3,7 +3,7 @@ FILES?=$$(find . -name '*.go' | grep -v vendor)
 
 VERSION := $(shell git describe --tags --always --dirty)
 
-default: testrace vet
+default: testrace vet fmtcheck
 
 tools:
 	go get -u github.com/golang/dep/cmd/...
@@ -37,6 +37,12 @@ vet:
 		echo "and fix them if necessary before submitting the code for review."; \
 		exit 1; \
 	fi
+
+fmt:
+	gofmt -w $(FILES)
+
+fmtcheck:
+	@sh -c "'$(CURDIR)/hack/gofmtcheck.sh'"
 
 cover:
 	@hack/coverage.sh
