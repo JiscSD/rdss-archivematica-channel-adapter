@@ -3,6 +3,9 @@ package backend
 import (
 	"fmt"
 	"strings"
+	"time"
+	"github.com/cenkalti/backoff"
+	log "github.com/sirupsen/logrus"
 )
 
 // Backend is a low-level interface used to interact with RDSS brokers.
@@ -19,6 +22,8 @@ type Backend interface {
 	Check(topic string) error
 
 	Close() error
+	
+	SetLogger(logger log.FieldLogger)
 }
 
 // Handler is a message handler for a particular topic.
@@ -34,6 +39,11 @@ var registration = make(map[string]Constructor)
 // It is meant to be used by implementations of Storage
 type Opts struct {
 	Opts map[string]string
+}
+
+type MessagePublisher interface {
+	sendMessage() error
+	canRetry(err error) bool
 }
 
 // DialOpts is a daisy-chaining mechanism for setting options to a backend
@@ -94,4 +104,30 @@ func Dial(name string, opts ...DialOpts) (Backend, error) {
 		}
 	}
 	return fn(dOpts)
+}
+
+//
+// Function that may be used by Backend implementations to provide backoff
+// and retry for network problems.
+func Publish(publishFunc func() error, canRetry func(err error) bool) error {
+		
+	retry := backoff.NewExponentialBackOff()
+	
+	var err error
+	for {
+		err = publishFunc()
+		if err == nil {
+			break
+		}
+		if canRetry(err) {
+			duration := retry.NextBackOff()
+			if duration == backoff.Stop {
+				break;
+			}
+			time.Sleep(duration)
+		} else {
+			break
+		}
+	}
+	return err
 }

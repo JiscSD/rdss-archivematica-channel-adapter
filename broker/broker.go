@@ -82,9 +82,10 @@ func New(backend backend.Backend, logger log.FieldLogger, config *Config) (*Brok
 		return nil, err
 	}
 
+	b.backend.SetLogger(logger)
+
 	// Set up message router
 	b.backend.Subscribe(config.QueueMain, b.messageHandler)
-
 	return b, nil
 }
 

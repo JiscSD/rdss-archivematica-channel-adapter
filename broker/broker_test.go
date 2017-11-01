@@ -202,12 +202,33 @@ func TestErrorQueues(t *testing.T) {
 	}
 }
 
+func TestMessageRetry(t *testing.T) {
+	var (
+		b, h = newRetryBroker(nil)
+		m    = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+	)
+	b.Request(context.Background(), m)
+	var retryCount int
+	for _, log := range h.AllEntries() {
+		if log.Message == "BackendWithRetry backoff" {
+			retryCount = retryCount + 1
+		}
+	}
+	if retryCount != 3 {
+		t.Error("Wrong number of network retries")
+	}
+}
+
 func newBroker(t *testing.T) (*Broker, *logtest.Hook) {
+	return newBroker_(t, "backendmock")
+}
+
+func newBroker_(t *testing.T, brokerName string) (*Broker, *logtest.Hook) {
 	if t == nil {
 		t = &testing.T{}
 	}
 	logger, logh := logtest.NewNullLogger()
-	bc, err := backend.Dial("backendmock", []backend.DialOpts{}...)
+	bc, err := backend.Dial(brokerName, []backend.DialOpts{}...)
 	if err != nil {
 		t.Fatal("newBroker() backend creation failed:", err)
 	}
@@ -223,6 +244,11 @@ func newBroker(t *testing.T) (*Broker, *logtest.Hook) {
 		t.Fatal("newBroker() broker creation failed:", err)
 	}
 	return b, logh
+}
+
+
+func newRetryBroker(t *testing.T) (*Broker, *logtest.Hook) {
+	return newBroker_(t, "backendmockretry")
 }
 
 // putErrRepo is a Repository that fails to Put messages.
