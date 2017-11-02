@@ -65,17 +65,17 @@ func (b *BackendImpl) Publish(topic string, data []byte) error {
 		Data:         data,
 		PartitionKey: aws.String(strconv.FormatInt(now.UnixNano(), 10)),
 	}
-	return backend.Publish(func() error {   // Send message function
-			_, err := b.Kinesis.PutRecord(input)
-			return err
-		}, func(err error) bool {  // Can retry function
-			if awsErr, ok := err.(awserr.Error); ok {
-				return awsErr.Code() == kinesis.ErrCodeProvisionedThroughputExceededException
-			}
-			return false
-		})
+	return backend.Publish(func() error { // Send message function
+		_, err := b.Kinesis.PutRecord(input)
+		return err
+	}, func(err error) bool { // Can retry function
+		if awsErr, ok := err.(awserr.Error); ok {
+			return awsErr.Code() == kinesis.ErrCodeProvisionedThroughputExceededException
+		}
+		return false
+	})
 }
-	
+
 func (b *BackendImpl) Subscribe(topic string, cb backend.Handler) {
 	p := b.processor(topic)
 	p.addHandler(cb)
@@ -159,5 +159,5 @@ func getDynamoDBInstance(opts *backend.Opts) dynamodbiface.DynamoDBAPI {
 }
 
 func (b *BackendImpl) SetLogger(logger log.FieldLogger) {
-	
+
 }

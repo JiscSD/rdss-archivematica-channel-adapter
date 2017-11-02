@@ -2,10 +2,10 @@ package backend
 
 import (
 	"fmt"
-	"strings"
-	"time"
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
+	"strings"
+	"time"
 )
 
 // Backend is a low-level interface used to interact with RDSS brokers.
@@ -22,7 +22,7 @@ type Backend interface {
 	Check(topic string) error
 
 	Close() error
-	
+
 	SetLogger(logger log.FieldLogger)
 }
 
@@ -110,9 +110,9 @@ func Dial(name string, opts ...DialOpts) (Backend, error) {
 // Function that may be used by Backend implementations to provide backoff
 // and retry for network problems.
 func Publish(publishFunc func() error, canRetry func(err error) bool) error {
-		
+
 	retry := backoff.NewExponentialBackOff()
-	
+
 	var err error
 	for {
 		err = publishFunc()
@@ -122,7 +122,7 @@ func Publish(publishFunc func() error, canRetry func(err error) bool) error {
 		if canRetry(err) {
 			duration := retry.NextBackOff()
 			if duration == backoff.Stop {
-				break;
+				break
 			}
 			time.Sleep(duration)
 		} else {

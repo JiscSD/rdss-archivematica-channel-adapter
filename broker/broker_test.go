@@ -246,7 +246,6 @@ func newBroker_(t *testing.T, brokerName string) (*Broker, *logtest.Hook) {
 	return b, logh
 }
 
-
 func newRetryBroker(t *testing.T) (*Broker, *logtest.Hook) {
 	return newBroker_(t, "backendmockretry")
 }
