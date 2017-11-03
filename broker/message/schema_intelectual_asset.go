@@ -18,7 +18,7 @@ type File struct {
 	FilePreservationEvent   []PreservationEvent `json:"filePreservationEvent"`
 	FileUploadStatus        UploadStatusEnum    `json:"fileUploadStatus"`
 	FileStorageStatus       StorageStatusEnum   `json:"fileStorageStatus"`
-	FileLastDownload        Date                `json:"fileLastDownload,omitempty"`
+	FileLastDownload        Date                `json:"fileLastDownloaded,omitempty"`
 	FileTechnicalAttributes []string            `json:"fileTechnicalAttributes,omitempty"`
 	FileStorageLocation     string              `json:"fileStorageLocation"`
 	FileStorageType         StorageTypeEnum     `json:"fileStorageType"`

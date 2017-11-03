@@ -98,7 +98,7 @@ const (
         "filePreservationEvent": null,
         "fileUploadStatus": 0,
         "fileStorageStatus": 0,
-        "fileLastDownload": {
+        "fileLastDownloaded": {
           "dateValue": "",
           "dateType": 0
         },
@@ -132,7 +132,7 @@ const (
         "filePreservationEvent": null,
         "fileUploadStatus": 0,
         "fileStorageStatus": 0,
-        "fileLastDownload": {
+        "fileLastDownloaded": {
           "dateValue": "",
           "dateType": 0
         },
