@@ -73,7 +73,7 @@ func (b *BackendImpl) Publish(topic string, data []byte) error {
 			return awsErr.Code() == kinesis.ErrCodeProvisionedThroughputExceededException
 		}
 		return false
-	})
+	}, nil)
 }
 
 func (b *BackendImpl) Subscribe(topic string, cb backend.Handler) {

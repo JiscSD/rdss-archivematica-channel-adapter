@@ -11,14 +11,14 @@ import (
 	logtest "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/backend"
-	_ "github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/backend/backendmock"
+	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/backend/backendmock"
 	bErrors "github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/errors"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
 )
 
 func ExampleBroker() {
 	// See the definition of newBroker for more details.
-	var b, _ = newBroker(nil)
+	var b, _, _ = newBroker(nil)
 
 	// Subscribe to MetadataCreate messages.
 	b.SubscribeType(message.MessageTypeMetadataCreate, func(msg *message.Message) error {
@@ -34,7 +34,7 @@ func ExampleBroker() {
 
 // TestPanickingSubscriber will panic if the broker doesn't regain control.
 func TestPanickingSubscriber(t *testing.T) {
-	var b, _ = newBroker(nil)
+	var b, _, _ = newBroker(nil)
 	b.Subscribe(func(msg *message.Message) error {
 		panic("error")
 	})
@@ -42,7 +42,7 @@ func TestPanickingSubscriber(t *testing.T) {
 }
 
 func TestCounter(t *testing.T) {
-	var b, _ = newBroker(nil)
+	var b, _, _ = newBroker(nil)
 	_ = b.Metadata.Create(context.Background(), &message.MetadataCreateRequest{})
 	if got := b.Count(); got != 1 {
 		t.Fatalf("b.Count mismatch: got %d, want %d", got, 1)
@@ -56,7 +56,7 @@ func TestCounter(t *testing.T) {
 
 func Test_messageHandler_duplicated(t *testing.T) {
 	var (
-		b, _ = newBroker(nil)
+		b, _, _ = newBroker(nil)
 		m    = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
 	)
 	send := func() { _ = b.Request(context.Background(), m) }
@@ -69,7 +69,7 @@ func Test_messageHandler_duplicated(t *testing.T) {
 }
 
 func Test_messageHandler_malformedJSON(t *testing.T) {
-	b, _ := newBroker(nil)
+	b, _, _ := newBroker(nil)
 	b.backend.Publish(b.config.QueueMain, []byte("INVALID-JSON"))
 	if got := b.Count(); got != 0 {
 		t.Fatal("The broker should count zero messages received but got:", got)
@@ -78,7 +78,7 @@ func Test_messageHandler_malformedJSON(t *testing.T) {
 
 func Test_messageHandler_errorHandling(t *testing.T) {
 	var (
-		b, _     = newBroker(nil)
+		b, _, _     = newBroker(nil)
 		timeout  = make(chan bool, 1)
 		received = make(chan bool, 1)
 	)
@@ -115,7 +115,7 @@ func Test_messageHandler_errorHandling(t *testing.T) {
 
 func Test_exists(t *testing.T) {
 	var (
-		b, _ = newBroker(nil)
+		b, _, _ = newBroker(nil)
 		m    = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
 	)
 	// It should return false because the message was never seen before.
@@ -130,7 +130,7 @@ func Test_exists(t *testing.T) {
 
 func Test_exists_putFails(t *testing.T) {
 	var (
-		b, h = newBroker(nil)
+		b, h, _ = newBroker(nil)
 		m    = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
 	)
 	b.repository = &putErrRepo{b.repository}
@@ -149,7 +149,7 @@ func Test_exists_putFails(t *testing.T) {
 }
 
 func TestErrorQueues(t *testing.T) {
-	b, _ := newBroker(t)
+	b, _, _ := newBroker(t)
 	defer b.Close()
 
 	tests := []struct {
@@ -204,26 +204,25 @@ func TestErrorQueues(t *testing.T) {
 
 func TestMessageRetry(t *testing.T) {
 	var (
-		b, h = newRetryBroker(nil)
-		m    = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+		b, _, backend = newRetryBroker(nil)
+		m             = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
 	)
 	b.Request(context.Background(), m)
-	var retryCount int
-	for _, log := range h.AllEntries() {
-		if log.Message == "BackendWithRetry backoff" {
-			retryCount = retryCount + 1
-		}
+
+	retry, ok := backend.(*backendmock.BackendWithRetry)
+	if ! ok {
+		t.Error("Wrong type of back end in retry test")
 	}
-	if retryCount != 3 {
+	if retry.Retries != 3 {
 		t.Error("Wrong number of network retries")
 	}
 }
 
-func newBroker(t *testing.T) (*Broker, *logtest.Hook) {
+func newBroker(t *testing.T) (*Broker, *logtest.Hook, backend.Backend) {
 	return newBroker_(t, "backendmock")
 }
 
-func newBroker_(t *testing.T, brokerName string) (*Broker, *logtest.Hook) {
+func newBroker_(t *testing.T, brokerName string) (*Broker, *logtest.Hook, backend.Backend) {
 	if t == nil {
 		t = &testing.T{}
 	}
@@ -243,10 +242,10 @@ func newBroker_(t *testing.T, brokerName string) (*Broker, *logtest.Hook) {
 	if err != nil {
 		t.Fatal("newBroker() broker creation failed:", err)
 	}
-	return b, logh
+	return b, logh, bc
 }
 
-func newRetryBroker(t *testing.T) (*Broker, *logtest.Hook) {
+func newRetryBroker(t *testing.T) (*Broker, *logtest.Hook, backend.Backend) {
 	return newBroker_(t, "backendmockretry")
 }
 

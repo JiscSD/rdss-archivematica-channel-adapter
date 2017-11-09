@@ -3,6 +3,7 @@ package backendmock
 import (
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/backend"
 	log "github.com/sirupsen/logrus"
@@ -14,6 +15,7 @@ func New(opts *backend.Opts) (backend.Backend, error) {
 
 	return b, nil
 }
+
 func NewWithRetry(opts *backend.Opts) (backend.Backend, error) {
 	b := &BackendWithRetry{}
 
@@ -68,28 +70,28 @@ func (b *BackendImpl) Close() error {
 	return nil
 }
 
-func (b *BackendImpl) SetLogger(logger log.FieldLogger) {
-	b.Logger = logger
-}
-
 // Mock implementation to exercise backoff and retry.
 type BackendWithRetry struct {
 	BackendImpl
 
-	retries int
+	Retries int
 }
 
 func (b *BackendWithRetry) Publish(topic string, data []byte) error {
 	return backend.Publish(func() error { // Send message function
-		if b.retries < 3 {
-			b.retries = b.retries + 1
-			if b.BackendImpl.Logger != nil {
-				b.BackendImpl.Logger.Infof("BackendWithRetry backoff")
-			}
+		if b.Retries < 3 {
+			b.Retries = b.Retries + 1
 			return errors.New("Waiting backoff")
 		}
 		return b.BackendImpl.Publish(topic, data)
 	}, func(err error) bool { // Can retry function
 		return true
-	})
+	}, &mockBackoff{})
+}
+
+type mockBackoff struct {
+}
+
+func (mb *mockBackoff) NextBackOff() time.Duration {
+	return time.Duration(0)
 }

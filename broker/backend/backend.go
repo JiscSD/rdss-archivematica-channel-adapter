@@ -2,10 +2,10 @@ package backend
 
 import (
 	"fmt"
-	"github.com/cenkalti/backoff"
-	log "github.com/sirupsen/logrus"
 	"strings"
 	"time"
+
+	"github.com/cenkalti/backoff"
 )
 
 // Backend is a low-level interface used to interact with RDSS brokers.
@@ -22,8 +22,6 @@ type Backend interface {
 	Check(topic string) error
 
 	Close() error
-
-	SetLogger(logger log.FieldLogger)
 }
 
 // Handler is a message handler for a particular topic.
@@ -41,14 +39,16 @@ type Opts struct {
 	Opts map[string]string
 }
 
-type MessagePublisher interface {
-	sendMessage() error
-	canRetry(err error) bool
-}
-
 // DialOpts is a daisy-chaining mechanism for setting options to a backend
 // during Dial.
 type DialOpts func(*Opts) error
+
+// Backoff wraps a network retry backoff type to control backoff periods.
+// Typically we want the 3rd-party backoff structure, but others, e.g. a test
+// version can be used instead.
+type Backoff interface {
+	NextBackOff() time.Duration
+}
 
 // Register register a new broker backend under a name. It is tipically used in
 // init functions.
@@ -107,12 +107,14 @@ func Dial(name string, opts ...DialOpts) (Backend, error) {
 }
 
 //
-// Function that may be used by Backend implementations to provide backoff
+// Publish may be used by Backend implementations to provide backoff
 // and retry for network problems.
-func Publish(publishFunc func() error, canRetry func(err error) bool) error {
+func Publish(publishFunc func() error, canRetry func(err error) bool, retry Backoff) error {
 
-	retry := backoff.NewExponentialBackOff()
-
+	if retry == nil {
+		retry = backoff.NewExponentialBackOff()
+	}
+	
 	var err error
 	for {
 		err = publishFunc()
