@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -12,9 +13,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-
-	"path"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
@@ -401,7 +399,7 @@ var (
 
 // safeFileName returns safe string that can be used in file names
 func safeFileName(str string) string {
-	name := path.Clean(path.Base(str))
+	name := strings.Replace(str, "/", "-", -1)
 	name = strings.Trim(name, " ")
 	name = regexSeparators.ReplaceAllString(name, "-")
 	name = regexLegal.ReplaceAllString(name, "")

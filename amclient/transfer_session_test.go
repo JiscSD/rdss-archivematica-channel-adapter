@@ -22,7 +22,8 @@ func TestNewTransferSession(t *testing.T) {
 	}{
 		{"Test1", "/Test1"},
 		{"_Test2", "/-Test2"},
-		{"Test/With/Slashes////", "/Slashes"},
+		{"Test/With/Slashes////", "/Test-With-Slashes-"},
+		{"new work-added with framework/α-alumina   ", "/new-work-added-with-framework-alumina"},
 		{"Test:foobar", "/Test-foobar"},
 	}
 	for _, tc := range tests {
