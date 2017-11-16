@@ -106,18 +106,17 @@ func Dial(name string, opts ...DialOpts) (Backend, error) {
 	return fn(dOpts)
 }
 
-//
 // Publish may be used by Backend implementations to provide backoff
 // and retry for network problems.
-func Publish(publishFunc func() error, canRetry func(err error) bool, retry Backoff) error {
+func Publish(publish func() error, canRetry func(err error) bool, retry Backoff) error {
 
 	if retry == nil {
 		retry = backoff.NewExponentialBackOff()
 	}
-	
+
 	var err error
 	for {
-		err = publishFunc()
+		err = publish()
 		if err == nil {
 			break
 		}

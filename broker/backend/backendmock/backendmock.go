@@ -2,11 +2,11 @@ package backendmock
 
 import (
 	"errors"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/backend"
-	log "github.com/sirupsen/logrus"
 )
 
 // New returns a backendmock backend.
@@ -17,8 +17,14 @@ func New(opts *backend.Opts) (backend.Backend, error) {
 }
 
 func NewWithRetry(opts *backend.Opts) (backend.Backend, error) {
-	b := &BackendWithRetry{}
-
+	b := &BackendWithRetry{maxRetries: 3}
+	if valueString, ok := opts.Opts["maxRetries"]; ok {
+		value, err := strconv.ParseUint(valueString, 0, 0)
+		if err != nil {
+			return b, err
+		}
+		b.maxRetries = int(value)
+	}
 	return b, nil
 }
 
@@ -32,7 +38,6 @@ func init() {
 type BackendImpl struct {
 	Subscriptions []subscription
 	mu            sync.RWMutex
-	Logger        log.FieldLogger
 }
 
 type subscription struct {
@@ -70,16 +75,17 @@ func (b *BackendImpl) Close() error {
 	return nil
 }
 
-// Mock implementation to exercise backoff and retry.
+// BackendWithRetry is a mock implementation to exercise backoff and retry.
 type BackendWithRetry struct {
 	BackendImpl
 
-	Retries int
+	maxRetries int
+	Retries    int
 }
 
 func (b *BackendWithRetry) Publish(topic string, data []byte) error {
 	return backend.Publish(func() error { // Send message function
-		if b.Retries < 3 {
+		if b.Retries < b.maxRetries {
 			b.Retries = b.Retries + 1
 			return errors.New("Waiting backoff")
 		}

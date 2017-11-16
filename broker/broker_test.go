@@ -57,7 +57,7 @@ func TestCounter(t *testing.T) {
 func Test_messageHandler_duplicated(t *testing.T) {
 	var (
 		b, _, _ = newBroker(nil)
-		m    = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+		m       = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
 	)
 	send := func() { _ = b.Request(context.Background(), m) }
 	// Send the same message twice.
@@ -78,7 +78,7 @@ func Test_messageHandler_malformedJSON(t *testing.T) {
 
 func Test_messageHandler_errorHandling(t *testing.T) {
 	var (
-		b, _, _     = newBroker(nil)
+		b, _, _  = newBroker(nil)
 		timeout  = make(chan bool, 1)
 		received = make(chan bool, 1)
 	)
@@ -116,7 +116,7 @@ func Test_messageHandler_errorHandling(t *testing.T) {
 func Test_exists(t *testing.T) {
 	var (
 		b, _, _ = newBroker(nil)
-		m    = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+		m       = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
 	)
 	// It should return false because the message was never seen before.
 	if b.exists(m) {
@@ -131,7 +131,7 @@ func Test_exists(t *testing.T) {
 func Test_exists_putFails(t *testing.T) {
 	var (
 		b, h, _ = newBroker(nil)
-		m    = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+		m       = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
 	)
 	b.repository = &putErrRepo{b.repository}
 	// It should return false because the message was never seen before.
@@ -210,7 +210,7 @@ func TestMessageRetry(t *testing.T) {
 	b.Request(context.Background(), m)
 
 	retry, ok := backend.(*backendmock.BackendWithRetry)
-	if ! ok {
+	if !ok {
 		t.Error("Wrong type of back end in retry test")
 	}
 	if retry.Retries != 3 {

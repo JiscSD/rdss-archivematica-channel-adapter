@@ -157,7 +157,3 @@ func getDynamoDBInstance(opts *backend.Opts) dynamodbiface.DynamoDBAPI {
 
 	return dynamodb.New(session.Must(session.NewSession(config)))
 }
-
-func (b *BackendImpl) SetLogger(logger log.FieldLogger) {
-
-}
