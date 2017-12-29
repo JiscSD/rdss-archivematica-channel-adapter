@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/twinj/uuid"
-
 	bErrors "github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/errors"
 )
 
@@ -29,7 +27,7 @@ type Message struct {
 func New(t MessageType, c MessageClass) *Message {
 	return &Message{
 		MessageHeader: MessageHeader{
-			ID:           uuid.NewV4().String(),
+			ID:           NewUUID(),
 			MessageType:  t,
 			MessageClass: c,
 			Version:      Version,
@@ -47,7 +45,7 @@ type messageAlias struct {
 }
 
 func (m *Message) ID() string {
-	return m.MessageHeader.ID
+	return m.MessageHeader.ID.String()
 }
 
 func (m Message) Type() string {

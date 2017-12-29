@@ -10,7 +10,7 @@ import (
 // including the type of Message, routing information, timings, sequencing, and
 // so forth.
 type MessageHeader struct {
-	ID              string          `json:"messageId"`
+	ID              *UUID           `json:"messageId"`
 	CorrelationID   string          `json:"correlationId,omitempty"`
 	MessageClass    MessageClass    `json:"messageClass"`
 	MessageType     MessageType     `json:"messageType"`
@@ -147,9 +147,9 @@ type MessageTimings struct {
 }
 
 type MessageSequence struct {
-	Sequence string `json:"sequence"`
-	Position int    `json:"position"`
-	Total    int    `json:"total"`
+	Sequence *UUID `json:"sequence"`
+	Position int   `json:"position"`
+	Total    int   `json:"total"`
 }
 
 type MessageHistory struct {

@@ -19,7 +19,7 @@ import (
 const (
 	metadataCreateRequest = `{
   "messageHeader": {
-    "messageId": "e4bdaea0-4712-4682-8d4b-e6d92b1fe1ac",
+    "messageId": "4e5bef43-21b1-4ef4-b850-dbae05b4882d",
     "messageClass": "Command",
     "messageType": "MetadataCreate",
     "messageTimings": {
@@ -27,7 +27,7 @@ const (
       "expirationTimestamp": null
     },
     "messageSequence": {
-      "sequence": "",
+      "sequence": "6ad8194d-d1d0-4389-a64d-c73d761463c9",
       "position": 0,
       "total": 0
     },
@@ -39,12 +39,12 @@ const (
     "version": "1.3.0"
   },
   "messageBody": {
-    "objectUuid": "06f75186-f9cb-4be3-8df7-64dd037eb54f",
+    "objectUuid": "be8eff14-a92b-429e-80b8-0ec4594d72c0",
     "objectTitle": "Non-uniform Mesh for Embroidered Microstrip Antennas - Simulation files",
     "objectPersonRole": [
       {
         "person": {
-          "personUuid": "479dada4-8650-421e-8480-63d58107a998",
+          "personUuid": "8468f86b-a936-41b3-a8a7-ef37e3008ba8",
           "personIdentifier": null,
           "personEntitlement": null,
           "personOrganisation": null,
@@ -78,7 +78,7 @@ const (
     ],
     "objectFile": [
       {
-        "fileUuid": "42143745-dba9-9c98-cdd7-0c521ae55118",
+        "fileUuid": "f8351e4f-66cc-4434-b0f1-54e7038c031a",
         "fileIdentifier": "1",
         "fileName": "woodpigeon-pic.jpg",
         "fileSize": 147004,
@@ -112,7 +112,7 @@ const (
         "fileStorageType": 1
       },
       {
-        "fileUuid": "9102f719-2f78-d9c2-de12-15f27024f78b",
+        "fileUuid": "c23d70ee-cc6b-4698-8d4c-9dcaefb40672",
         "fileIdentifier": "2",
         "fileName": "bird-sounds.mp3",
         "fileSize": 910616,
@@ -198,7 +198,7 @@ func TestMessage_ToJSON(t *testing.T) {
 			[]byte(metadataCreateRequest),
 			&Message{
 				MessageHeader: MessageHeader{
-					ID:           "e4bdaea0-4712-4682-8d4b-e6d92b1fe1ac",
+					ID:           MustUUID("4e5bef43-21b1-4ef4-b850-dbae05b4882d"),
 					MessageClass: MessageClassCommand,
 					MessageType:  MessageTypeMetadataCreate,
 					MessageHistory: MessageHistory{
@@ -206,16 +206,21 @@ func TestMessage_ToJSON(t *testing.T) {
 						MachineAddress: "bar",
 						Timestamp:      Timestamp(time.Date(1997, time.July, 16, 19, 20, 0, 0, time.FixedZone("+0100", 3600))),
 					},
+					MessageSequence: MessageSequence{
+						Sequence: MustUUID("6ad8194d-d1d0-4389-a64d-c73d761463c9"),
+						Position: 0,
+						Total:    0,
+					},
 					Version: Version,
 				},
 				MessageBody: &MetadataCreateRequest{
 					ResearchObject{
-						ObjectUuid:  "06f75186-f9cb-4be3-8df7-64dd037eb54f",
+						ObjectUuid:  MustUUID("be8eff14-a92b-429e-80b8-0ec4594d72c0"),
 						ObjectTitle: "Non-uniform Mesh for Embroidered Microstrip Antennas - Simulation files",
 						ObjectPersonRole: []PersonRole{
 							{
 								Person: &Person{
-									PersonUuid:      "479dada4-8650-421e-8480-63d58107a998",
+									PersonUuid:      MustUUID("8468f86b-a936-41b3-a8a7-ef37e3008ba8"),
 									PersonGivenName: "Zhang, Shiyu",
 								},
 								Role: PersonRoleEnum_dataCreator,
@@ -238,7 +243,7 @@ func TestMessage_ToJSON(t *testing.T) {
 						},
 						ObjectFile: []File{
 							{
-								FileUUID:       "42143745-dba9-9c98-cdd7-0c521ae55118",
+								FileUUID:       MustUUID("f8351e4f-66cc-4434-b0f1-54e7038c031a"),
 								FileIdentifier: "1",
 								FileName:       "woodpigeon-pic.jpg",
 								FileSize:       147004,
@@ -252,7 +257,7 @@ func TestMessage_ToJSON(t *testing.T) {
 								FileStorageType:     1,
 							},
 							{
-								FileUUID:       "9102f719-2f78-d9c2-de12-15f27024f78b",
+								FileUUID:       MustUUID("c23d70ee-cc6b-4698-8d4c-9dcaefb40672"),
 								FileIdentifier: "2",
 								FileName:       "bird-sounds.mp3",
 								FileSize:       910616,
@@ -310,11 +315,11 @@ func TestMessage_New(t *testing.T) {
 
 func TestMessage_ID(t *testing.T) {
 	m := &Message{
-		MessageHeader: MessageHeader{ID: "ID"},
+		MessageHeader: MessageHeader{ID: NewUUID()},
 		MessageBody:   typedBody(MessageTypeVocabularyRead, ""),
 	}
-	if id := m.ID(); id != "ID" {
-		t.Errorf("unexpected ID: %v", id)
+	if have, want := m.ID(), m.MessageHeader.ID.String(); have != want {
+		t.Errorf("Unexpected ID; have %v, want %v", have, want)
 	}
 }
 

@@ -24,7 +24,7 @@ func (m Message) MetadataCreateRequest() (*MetadataCreateRequest, error) {
 
 // MetadataReadRequest represents the body of the message.
 type MetadataReadRequest struct {
-	ObjectUuid string `json:"objectUuid"`
+	ObjectUuid *UUID `json:"objectUuid"`
 }
 
 // MetadataReadRequest returns the body of the message.
@@ -70,7 +70,7 @@ func (m Message) MetadataUpdateRequest() (*MetadataUpdateRequest, error) {
 
 // MetadataDeleteRequest represents the body of the message.
 type MetadataDeleteRequest struct {
-	ObjectUuid string `json:"objectUuid"`
+	ObjectUuid *UUID `json:"objectUuid"`
 }
 
 // MetadataDeleteRequest returns the body of the message.

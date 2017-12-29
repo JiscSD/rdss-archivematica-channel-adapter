@@ -101,8 +101,8 @@ func Test_toRepoMessage(t *testing.T) {
 	}{
 		{nil, nil, true},
 		{
-			&message.Message{MessageHeader: message.MessageHeader{ID: "foobar"}},
-			&RepositoryMessage{MessageId: "foobar"},
+			&message.Message{MessageHeader: message.MessageHeader{ID: message.MustUUID("ab0f8186-4b68-430e-a07e-b517300e6f9f")}},
+			&RepositoryMessage{MessageId: "ab0f8186-4b68-430e-a07e-b517300e6f9f"},
 			false,
 		},
 	}
@@ -163,16 +163,16 @@ func TestRepositoryBuiltinImpl_Put(t *testing.T) {
 		errWanted bool
 	}{
 		{
-			"12345",
-			&message.Message{MessageHeader: message.MessageHeader{ID: "12345"}},
-			"12345",
+			"ab0f8186-4b68-430e-a07e-b517300e6f9f",
+			&message.Message{MessageHeader: message.MessageHeader{ID: message.MustUUID("ab0f8186-4b68-430e-a07e-b517300e6f9f")}},
+			"ab0f8186-4b68-430e-a07e-b517300e6f9f",
 			true,
 			false,
 		},
 		{
 			"my-id",
-			&message.Message{MessageHeader: message.MessageHeader{ID: "12345"}},
-			"12345",
+			&message.Message{MessageHeader: message.MessageHeader{ID: message.MustUUID("ab0f8186-4b68-430e-a07e-b517300e6f9f")}},
+			"ab0f8186-4b68-430e-a07e-b517300e6f9f",
 			false,
 			false,
 		},
@@ -244,8 +244,16 @@ func TestRepositoryDynamoDBImpl_Put(t *testing.T) {
 		wantErr bool
 		client  *mockDynamoDBClient
 	}{
-		{&message.Message{}, false, &mockDynamoDBClient{}},
-		{&message.Message{}, true, &mockDynamoDBClient{PutItem_WantedErr: errors.New("error")}},
+		{
+			message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand),
+			false,
+			&mockDynamoDBClient{},
+		},
+		{
+			message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand),
+			true,
+			&mockDynamoDBClient{PutItem_WantedErr: errors.New("error")},
+		},
 		{nil, true, nil},
 		// TODO: check case with dynamodbattribute.MarshalMap(rMsg) returning error
 	}

@@ -4,12 +4,13 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+
+	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
 )
 
 var ErrInvalidRepositoryConfig = errors.New("invalid repository configuration")

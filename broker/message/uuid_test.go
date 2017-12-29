@@ -31,7 +31,7 @@ func TestMustUUIDWithPanic(t *testing.T) {
 	})
 	t.Run("WithoutPanic", func(t *testing.T) {
 		defer func() {
-			if r := recover(); r == nil {
+			if r := recover(); r != nil {
 				t.Error("The code did panic")
 			}
 		}()

@@ -103,15 +103,15 @@ func TestValidCreateMetadataMessage(t *testing.T) {
 	msg := message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
 	body := &message.MetadataCreateRequest{
 		ResearchObject: message.ResearchObject{
-			ObjectUuid:  "a90652dd-6abd-424c-b7ce-d6728c7f3f9f",
+			ObjectUuid:  message.MustUUID("a90652dd-6abd-424c-b7ce-d6728c7f3f9f"),
 			ObjectTitle: "Research about birds in Doñana National Park",
 			ObjectFile: []message.File{
 				message.File{
-					FileUUID:            "One",
+					FileUUID:            message.MustUUID("6129ea79-6f4e-4348-a832-ba03bd7631d8"),
 					FileStorageLocation: "s3://bucket-01/one.mp3",
 				},
 				message.File{
-					FileUUID:            "Two",
+					FileUUID:            message.MustUUID("2e1dd38d-924c-464a-a0ab-58b14712a8e8"),
 					FileStorageLocation: "s3://bucket-01/two.wav",
 				},
 			},

@@ -8,7 +8,7 @@ type Organisation struct {
 }
 
 type Person struct {
-	PersonUuid            string                           `json:"personUuid"`
+	PersonUuid            *UUID                            `json:"personUuid"`
 	PersonIdentifier      []PersonIdentifier               `json:"personIdentifier"`
 	PersonEntitlement     []PersonRoleEnum                 `json:"personEntitlement"`
 	PersonOrganisation    []Organisation                   `json:"personOrganisation"`

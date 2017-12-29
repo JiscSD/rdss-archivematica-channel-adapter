@@ -1,7 +1,7 @@
 package message
 
 type ResearchObject struct {
-	ObjectUuid              string              `json:"objectUuid"`
+	ObjectUuid              *UUID               `json:"objectUuid"`
 	ObjectTitle             string              `json:"objectTitle"`
 	ObjectPersonRole        []PersonRole        `json:"objectPersonRole"`
 	ObjectDescription       string              `json:"objectDescription"`
@@ -52,7 +52,7 @@ type Identifier struct {
 }
 
 type Collection struct {
-	CollectionUuid              string             `json:"collectionUuid"`
+	CollectionUuid              *UUID              `json:"collectionUuid"`
 	CollectionName              string             `json:"collectionName"`
 	CollectionObject            []ResearchObject   `json:"collectionObject,omitempty"`
 	CollectionKeywords          []string           `json:"collectionKeywords,omitempty"`

@@ -1,7 +1,7 @@
 package message
 
 type File struct {
-	FileUUID                string              `json:"fileUuid"`
+	FileUUID                *UUID               `json:"fileUuid"`
 	FileIdentifier          string              `json:"fileIdentifier"`
 	FileName                string              `json:"fileName"`
 	FileSize                int                 `json:"fileSize"`
@@ -25,7 +25,7 @@ type File struct {
 }
 
 type Checksum struct {
-	ChecksumUuid  string           `json:"checksumUuid,omitempty"`
+	ChecksumUuid  *UUID            `json:"checksumUuid,omitempty"`
 	ChecksumType  ChecksumTypeEnum `json:"checksumType"`
 	ChecksumValue string           `json:"checksumValue"`
 }
@@ -49,7 +49,7 @@ type FilePermission struct {
 }
 
 type Group struct {
-	GroupUuid           string           `json:"groupUuid"`
+	GroupUuid           *UUID            `json:"groupUuid"`
 	GroupName           string           `json:"groupName"`
 	GroupIdentifier     string           `json:"groupIdentifier"`
 	GroupFilePermission []FilePermission `json:"groupFilePermission"`
@@ -57,7 +57,7 @@ type Group struct {
 }
 
 type Grant struct {
-	GrantUuid       string           `json:"grantUuid"`
+	GrantUuid       *UUID            `json:"grantUuid"`
 	GrantIdentifier string           `json:"grantIdentifier"`
 	GrantFunder     OrganisationRole `json:"grantFunder"`
 	GrantStart      Date             `json:"grantStart"`
@@ -66,7 +66,7 @@ type Grant struct {
 }
 
 type Project struct {
-	ProjectUuid        string       `json:"projectUuid"`
+	ProjectUuid        *UUID        `json:"projectUuid"`
 	ProjectIdentifier  []string     `json:"projectIdentifier"`
 	ProjectName        string       `json:"projectName"`
 	ProjectDescription string       `json:"projectDescription"`
