@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -149,6 +152,16 @@ const (
   }
 }`
 )
+
+var (
+	validatorEnabled    bool
+	validatorSchemasDir string
+)
+
+func init() {
+	flag.BoolVar(&validatorEnabled, "validator.enabled", false, "run validation against fixtures")
+	flag.StringVar(&validatorSchemasDir, "validator.schemasDir", "", "schemas dir")
+}
 
 func TestMessage_FromJSON(t *testing.T) {
 	testCases := []struct {
@@ -379,6 +392,7 @@ func TestMessage_DecodeFixtures(t *testing.T) {
 	var (
 		fixturesDir = "../../fixtures/messages"
 		wd, _       = os.Getwd()
+		validator   = getValidator(t)
 	)
 	for _, tt := range sharedTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -411,6 +425,39 @@ func TestMessage_DecodeFixtures(t *testing.T) {
 			if ret := reflect.ValueOf(msg).MethodByName(tt.name).Call([]reflect.Value{}); ret[1].IsNil() {
 				t.Fatal("expected interface conversion error wasn't returned")
 			}
+
+			// Validation test. The fixtures are not full messages so we manually
+			// construct the our instance and assign the body stream to it.
+			msg = New(tt.t, tt.c)
+			if validatorEnabled {
+				in.Seek(0, io.SeekStart)
+				blob, err := ioutil.ReadAll(in)
+				if err != nil {
+					t.Fatal(err)
+				}
+				msg.body = blob
+			}
+			res, err := validator.Validate(msg)
+			if err != nil {
+				t.Fatal("validator failed:", err)
+			}
+			if !res.Valid() {
+				for _, err := range res.Errors() {
+					t.Log("validation error:", err)
+				}
+				t.Error("validator reported that the message is not valid")
+			}
 		})
 	}
+}
+
+func getValidator(t *testing.T) Validator {
+	if !validatorEnabled {
+		return &NoOpValidator{}
+	}
+	validator, err := NewValidator(validatorSchemasDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return validator
 }

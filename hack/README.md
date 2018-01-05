@@ -21,3 +21,26 @@ By default gRPC uses protocol buffers. You will need the `protoc` compiler to
 generate stub server and client code, which is listed as a development
 dependency above. Use the [build-proto.sh](build-proto.sh) script to do it
 automatically.
+
+## Download the schema files
+
+The schema files can be downloaded with the following command:
+
+    $ ./download-schemas.sh $GH_API_TOKEN
+
+You have to create your own
+[personal API token](https://github.com/settings/tokens).
+
+## Running tests
+
+Use Go 1.9 or newer.
+
+Run the following command in the root directory:
+
+    $ go test -race ./...
+
+Also from the root directory you can run the validator tests against the
+fixtures as long as you have already [downloaded the schema files](#download-the-schema-files).
+This is the command that you need to run from the root directory:
+
+    $ go test ./broker/message -validator.enabled=true -validator.schemasDir=$PWD/hack/schemas
