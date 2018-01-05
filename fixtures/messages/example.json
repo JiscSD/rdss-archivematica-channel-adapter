@@ -14,11 +14,13 @@
       "position": 1,
       "total": 1
     },
-    "messageHistory": {
-      "machineId": "string",
-      "machineAddress": "string",
-      "timestamp": ""
-    },
+    "messageHistory": [
+      {
+        "machineId": "string",
+        "machineAddress": "string",
+        "timestamp": ""
+      }
+    ],
     "version": "",
     "errorCode": "GENERR001",
     "errorDescription": "string"
@@ -85,7 +87,7 @@
     ],
     "objectDate": [
       {
-        "dateValue": "string",
+        "dateValue": "2002-10-02T10:00:00-05:00",
         "dateType": 1
       }
     ],
@@ -137,7 +139,7 @@
         "fileSize": 1,
         "fileLabel": "string",
         "fileDateCreated": {
-          "dateValue": "string",
+          "dateValue": "2002-10-02T10:00:00-05:00",
           "dateType": 1
         },
         "fileRights": {
@@ -172,7 +174,7 @@
         "fileHasMimeType": true,
         "fileDateModified": [
           {
-            "dateValue": "string",
+            "dateValue": "2002-10-02T10:00:00-05:00",
             "dateType": 1
           }
         ],
@@ -189,8 +191,8 @@
         ],
         "fileUploadStatus": 1,
         "fileStorageStatus": 1,
-        "fileLastDownload": {
-          "dateValue": "string",
+        "fileLastDownloaded": {
+          "dateValue": "2002-10-02T10:00:00-05:00",
           "dateType": 1
         },
         "fileTechnicalAttributes": [
