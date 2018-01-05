@@ -172,7 +172,7 @@ func TestMessage_FromJSON(t *testing.T) {
 				return
 			}
 			if err != nil {
-				t.Errorf("error unmarshalling the message: %s", err)
+				t.Fatalf("error unmarshalling the message: %s", err)
 			}
 			if msg.MessageHeader.MessageType != tc.et {
 				t.Errorf("expected=%s received=%s", tc.et, msg.MessageHeader.MessageType)
