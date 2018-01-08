@@ -79,7 +79,7 @@ func New(backend backend.Backend, logger log.FieldLogger, config *Config) (*Brok
 	b.Vocabulary = &VocabularyServiceOp{broker: b}
 
 	// Set up validator.
-	if err := b.setUpSchemaValidator(config.SchemasDir); err != nil {
+	if err := b.setUpSchemaValidator(); err != nil {
 		return nil, err
 	}
 
@@ -158,26 +158,16 @@ func (b *Broker) messageHandler(data []byte) error {
 	return err
 }
 
-// setUpSchemaValidator sets up the JSON Schema validator. If the schemas
-// directory is empty the validator installed will be a no-op. If the validator
-// setup fails then we return an error.
-func (b *Broker) setUpSchemaValidator(schemasDir string) error {
-	if schemasDir == "" {
-		b.logger.Infoln("JSON Schema validator was not installed: `broker.schemas_dir` not indicated.")
-		b.validator = &message.NoOpValidator{}
-		return nil
+// setUpSchemaValidator sets up the JSON Schema validator.
+func (b *Broker) setUpSchemaValidator() (err error) {
+	if b.validator, err = message.NewValidator(); err != nil {
+		return err
 	}
-	var err error
-	b.validator, err = message.NewValidator(schemasDir)
-	if err != nil {
-		b.logger.Errorf("JSON Schema validator cannot be installed: %s", err)
-		return errors.Wrap(err, "json schema validator setup failed")
-	}
-	b.logger.Infoln("JSON Schema validator was installed successfully.")
+	b.logger.Infoln("JSON Schema validator installed successfully.")
 	for mtype, _ := range b.validator.Validators() {
 		b.logger.Debugf("JSON Schema for message type %s installed.", mtype)
 	}
-	return nil
+	return err
 }
 
 // validateMessage returns an error if the message does not validate against

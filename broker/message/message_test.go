@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -14,6 +12,7 @@ import (
 	"github.com/twinj/uuid"
 
 	bErrors "github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/errors"
+	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message/specdata"
 )
 
 const (
@@ -374,29 +373,22 @@ var sharedTests = []struct {
 	c           MessageClass
 	isResponse  bool
 }{
-	{"MetadataCreateRequest", "body/metadata/create/request.json", MessageTypeMetadataCreate, MessageClassCommand, false},
-	{"MetadataDeleteRequest", "body/metadata/delete/request.json", MessageTypeMetadataDelete, MessageClassCommand, false},
-	{"MetadataReadRequest", "body/metadata/read/request.json", MessageTypeMetadataRead, MessageClassCommand, false},
-	{"MetadataReadResponse", "body/metadata/read/response.json", MessageTypeMetadataRead, MessageClassCommand, true},
-	{"MetadataUpdateRequest", "body/metadata/update/request.json", MessageTypeMetadataUpdate, MessageClassCommand, false},
-	{"VocabularyPatchRequest", "body/vocabulary/patch/request.json", MessageTypeVocabularyPatch, MessageClassCommand, false},
-	{"VocabularyReadRequest", "body/vocabulary/read/request.json", MessageTypeVocabularyRead, MessageClassCommand, false},
-	{"VocabularyReadResponse", "body/vocabulary/read/response.json", MessageTypeVocabularyRead, MessageClassCommand, true},
+	{"MetadataCreateRequest", "messages/body/metadata/create/request.json", MessageTypeMetadataCreate, MessageClassCommand, false},
+	{"MetadataDeleteRequest", "messages/body/metadata/delete/request.json", MessageTypeMetadataDelete, MessageClassCommand, false},
+	{"MetadataReadRequest", "messages/body/metadata/read/request.json", MessageTypeMetadataRead, MessageClassCommand, false},
+	{"MetadataReadResponse", "messages/body/metadata/read/response.json", MessageTypeMetadataRead, MessageClassCommand, true},
+	{"MetadataUpdateRequest", "messages/body/metadata/update/request.json", MessageTypeMetadataUpdate, MessageClassCommand, false},
+	{"VocabularyPatchRequest", "messages/body/vocabulary/patch/request.json", MessageTypeVocabularyPatch, MessageClassCommand, false},
+	{"VocabularyReadRequest", "messages/body/vocabulary/read/request.json", MessageTypeVocabularyRead, MessageClassCommand, false},
+	{"VocabularyReadResponse", "messages/body/vocabulary/read/response.json", MessageTypeVocabularyRead, MessageClassCommand, true},
 }
 
 func TestMessage_DecodeFixtures(t *testing.T) {
-	var (
-		fixturesDir = "../../fixtures/messages"
-		wd, _       = os.Getwd()
-	)
+	var validator = getValidator(t)
 	for _, tt := range sharedTests {
 		t.Run(tt.name, func(t *testing.T) {
-			path := filepath.Join(wd, fixturesDir, tt.pathFixture)
-			in, err := os.Open(path)
-			if err != nil {
-				t.Fatal("fixture could not be opened:", err)
-			}
-			dec := json.NewDecoder(in)
+			blob := specdata.MustAsset(tt.pathFixture)
+			dec := json.NewDecoder(bytes.NewReader(blob))
 
 			var correlationId string
 			if tt.isResponse {
@@ -404,7 +396,7 @@ func TestMessage_DecodeFixtures(t *testing.T) {
 			}
 
 			body := typedBody(tt.t, correlationId)
-			if err = dec.Decode(body); err != nil {
+			if err := dec.Decode(body); err != nil {
 				t.Fatal("decoding failed:", err)
 			}
 
@@ -420,6 +412,31 @@ func TestMessage_DecodeFixtures(t *testing.T) {
 			if ret := reflect.ValueOf(msg).MethodByName(tt.name).Call([]reflect.Value{}); ret[1].IsNil() {
 				t.Fatal("expected interface conversion error wasn't returned")
 			}
+
+			// Validation test
+			t.Skip("See https://github.com/JiscRDSS/rdss-message-api-specification/pull/67")
+			{
+				msg = New(tt.t, tt.c)
+				msg.body = blob
+				res, err := validator.Validate(msg)
+				if err != nil {
+					t.Fatal("validator failed:", err)
+				}
+				if !res.Valid() {
+					for _, err := range res.Errors() {
+						t.Log("validation error:", err)
+					}
+					t.Error("validator reported that the message is not valid")
+				}
+			}
 		})
 	}
+}
+
+func getValidator(t *testing.T) Validator {
+	validator, err := NewValidator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return validator
 }

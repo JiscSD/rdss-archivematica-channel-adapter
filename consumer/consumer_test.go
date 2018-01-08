@@ -3,7 +3,6 @@ package consumer_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
@@ -98,71 +97,13 @@ func tearDown() {
 	server.Close()
 }
 
-func TestValidCreateMetadataMessage(t *testing.T) {
-	// Build message MetadataCreate
-	msg := message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
-	body := &message.MetadataCreateRequest{
-		ResearchObject: message.ResearchObject{
-			ObjectUuid:  message.MustUUID("a90652dd-6abd-424c-b7ce-d6728c7f3f9f"),
-			ObjectTitle: "Research about birds in Doñana National Park",
-			ObjectFile: []message.File{
-				message.File{
-					FileUUID:            message.MustUUID("6129ea79-6f4e-4348-a832-ba03bd7631d8"),
-					FileStorageLocation: "s3://bucket-01/one.mp3",
-				},
-				message.File{
-					FileUUID:            message.MustUUID("2e1dd38d-924c-464a-a0ab-58b14712a8e8"),
-					FileStorageLocation: "s3://bucket-01/two.wav",
-				},
-			},
-		},
+func TestValidMetadataDeleteMessage(t *testing.T) {
+	// Build message MetadataDelete
+	msg := message.New(message.MessageTypeMetadataDelete, message.MessageClassCommand)
+	body := &message.MetadataDeleteRequest{
+		ObjectUuid: "a90652dd-6abd-424c-b7ce-d6728c7f3f9f",
 	}
 	msg.MessageBody = body
-
-	// Install our custom HTTP handlers
-	mux.HandleFunc("/api/transfer/start_transfer/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			t.Errorf("Request method should be POST, got: %s", r.Method)
-		}
-
-		decoder := json.NewDecoder(r.Body)
-		msg := &amclient.TransferStartRequest{}
-		err := decoder.Decode(msg)
-		if err != nil {
-			t.Errorf("Response cannot be decoded: %s", err)
-		}
-		defer r.Body.Close()
-
-		if len(msg.Paths) < len(body.ObjectFile) {
-			t.Errorf("Response does not include two files")
-		}
-
-		fmt.Println(body.ObjectFile)
-
-		fmt.Fprint(w, `{"message": "Copy successful.", "path": "/foobar"}`)
-	})
-
-	mux.HandleFunc("/api/processing-configuration/automated/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{}`)
-	})
-
-	mux.HandleFunc("/api/transfer/approve/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{
-			"message": "Approval successful.",
-			"uuid": "a90652dd-6abd-424c-b7ce-d6728c7f3f9f"
-		}`)
-	})
-
-	mux.HandleFunc("/api/transfer/unapproved/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{
-			"message": "Fetched unapproved transfers successfully.",
-			"results": [{
-				"type": "standard",
-				"directory": "Research about birds in Doñana National Park",
-				"uuid": "a90652dd-6abd-424c-b7ce-d6728c7f3f9f"
-			}]
-		}`)
-	})
 
 	t.Run("Publish message", func(t *testing.T) {
 		data, err := json.Marshal(msg)
@@ -182,7 +123,7 @@ func TestValidCreateMetadataMessage(t *testing.T) {
 			// Create new messages so they have different messageIds, otherwise
 			// they won't be discarded as the local repository avoids delivering
 			// the same message more than once.
-			msg = message.New(message.MessageTypeMetadataRead, message.MessageClassCommand)
+			msg = message.New(message.MessageTypeMetadataDelete, message.MessageClassCommand)
 			data, _ = json.Marshal(msg)
 			bmock.Publish("", data)
 		}
@@ -203,10 +144,10 @@ type RandomObjectStorage struct{}
 // Download implements ObjectStorage
 func (s *RandomObjectStorage) Download(_ context.Context, w io.WriterAt, _ string) (int64, error) {
 	data := make([]byte, 8)
-	l, err := rand.Read(data)
+	_, err := rand.Read(data)
 	if err != nil {
 		return 0, err
 	}
-	l, err = w.WriteAt(data, 0)
+	l, err := w.WriteAt(data, 0)
 	return int64(l), err
 }

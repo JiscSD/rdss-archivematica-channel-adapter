@@ -7,7 +7,6 @@ type Config struct {
 	QueueInvalid     string
 	QueueError       string
 	RepositoryConfig *RepositoryConfig
-	SchemasDir       string
 }
 
 type RepositoryConfig struct {

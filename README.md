@@ -17,7 +17,7 @@
 
 **THIS IS A PROTOTYPE!**
 
-This repository holds the source code of the channel adapter that connects Archivematica to [RDSS's messaging API](https://github.com/JiscRDSS/rdss-message-api-docs).
+This repository holds the source code of the channel adapter that connects Archivematica to [RDSS's messaging API](https://github.com/JiscRDSS/rdss-message-api-specification).
 
 The adapter is written in Go as a standalone application that runs next to Archivematica. Its main role is to abstract the complexities and specifics of the underlying queuing system from its users.
 
@@ -141,12 +141,6 @@ When `PUBLISHER.TLS` is set to `true`, this is used to describe the location of 
 
 The name of the backend used as the RDSS broker. `"kinesis"` is the backend currently supported in addition to "backendmock"`, developed for testing purposes only.
 
-:heavy_minus_sign: `BROKER.SCHEMAS_DIR`
-
-> Default: `""`
-
-The location of the directory containing the JSON Schema files of the RDSS messaging API. Typically this environment points to the tree where the [rdss-message-api-docs](https://github.com/JiscRDSS/rdss-message-api-docs) repository has been cloned.
-
 :heavy_minus_sign: `BROKER.QUEUES.MAIN`
 
 > Default: `"main"`
@@ -169,7 +163,7 @@ Name of the error message queue.
 
 > Default: `"builtin"`
 
-The [Local Data Repository](https://github.com/JiscRDSS/rdss-message-api-docs#local-data-repository) backend. The default (`"builtin"`) is a simple non-persisted hash in memory. A better alternative that can be shared by multiple consumers is the `dynamodb` backend which uses a single DynamoDB table.
+The [Local Data Repository](https://github.com/JiscRDSS/rdss-message-api-specification#local-data-repository) backend. The default (`"builtin"`) is a simple non-persisted hash in memory. A better alternative that can be shared by multiple consumers is the `dynamodb` backend which uses a single DynamoDB table.
 
 :heavy_minus_sign: `BROKER.REPOSITORY.DYNAMODB_TLS`
 

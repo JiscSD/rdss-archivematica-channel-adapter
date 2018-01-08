@@ -13,6 +13,7 @@ tools:
 	go get -u github.com/gogo/protobuf/jsonpb
 	go get -u github.com/gogo/protobuf/protoc-gen-gogo
 	go get -u github.com/gogo/protobuf/gogoproto
+	go get -u github.com/jteeuwen/go-bindata/...
 
 build:
 	@echo ${VERSION}
@@ -53,9 +54,12 @@ vendor-status:
 proto:
 	hack/build-proto.sh
 
+spec:
+	hack/build-spec.sh
+
 bench:
 	@go test -v -run=^$ -bench=$(PKGS)
 
 .NOTPARALLEL:
 
-.PHONY: default tools build test testrace cover vendor-status proto bench
+.PHONY: default tools build test testrace cover vendor-status proto bench spec

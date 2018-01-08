@@ -1,22 +1,17 @@
 FROM golang:1.9.1-alpine as builder
-ARG GITHUB_API_TOKEN
 WORKDIR /go/src/github.com/JiscRDSS/rdss-archivematica-channel-adapter
 COPY . .
 # Don't use `make testrace`, it won't work in Alpine Linux!
 RUN set -x \
-	&& apk add --no-cache --virtual .build-deps \
-		make gcc musl-dev git bash curl \
-	&& ./hack/download-schemas.sh $GITHUB_API_TOKEN \
+	&& apk add --no-cache --virtual .build-deps make gcc musl-dev git \
 	&& make test vet \
 	&& make build
 
 FROM alpine:3.6
 WORKDIR /var/lib/archivematica
 COPY --from=builder /go/src/github.com/JiscRDSS/rdss-archivematica-channel-adapter/rdss-archivematica-channel-adapter .
-COPY --from=builder /go/src/github.com/JiscRDSS/rdss-archivematica-channel-adapter/hack/schemas ./schemas
 RUN apk --no-cache add ca-certificates
 RUN addgroup -g 333 -S archivematica && adduser -u 333 -h /var/lib/archivematica -S -G archivematica archivematica
 USER archivematica
-ENV RDSS_ARCHIVEMATICA_ADAPTER_BROKER.SCHEMAS_DIR /schemas
 ENTRYPOINT ["/var/lib/archivematica/rdss-archivematica-channel-adapter"]
 CMD ["help"]

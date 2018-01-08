@@ -1,12 +1,17 @@
 package message
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"path/filepath"
+	"io"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/xeipuuv/gojsonreference"
 	"github.com/xeipuuv/gojsonschema"
+
+	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message/specdata"
 )
 
 type Validator interface {
@@ -25,29 +30,64 @@ type rdssValidator struct {
 	validators map[string]*gojsonschema.Schema
 }
 
+var _ Validator = rdssValidator{}
+
+// rdssPrefix is used by our schema loder so we can differentiate local
+// references from external references. When rdssPrefix is matched the schema
+// loader will load our internal schemas persisted in the specdata package.
+// It is not a constant becuase we change it in our tests.
+var rdssPrefix = "https://www.jisc.ac.uk/rdss/schema/"
+
 var rdssSchemas = map[string]string{
-	"MetadataCreateRequest":  "messages/body/metadata/create/request_schema.json",
-	"MetadataDeleteRequest":  "messages/body/metadata/delete/request_schema.json",
-	"MetadataReadRequest":    "messages/body/metadata/read/request_schema.json",
-	"MetadataReadResponse":   "messages/body/metadata/read/response_schema.json",
-	"MetadataUpdateRequest":  "messages/body/metadata/update/request_schema.json",
-	"VocabularyPatchRequest": "messages/body/vocabulary/patch/request_schema.json",
-	"VocabularyReadRequest":  "messages/body/vocabulary/read/request_schema.json",
-	"VocabularyReadResponse": "messages/body/vocabulary/read/response_schema.json",
+	"MetadataCreateRequest":  "https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/create/request_schema.json",
+	"MetadataDeleteRequest":  "https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/delete/request_schema.json",
+	"MetadataReadRequest":    "https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/read/request_schema.json",
+	"MetadataReadResponse":   "https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/read/response_schema.json",
+	"MetadataUpdateRequest":  "https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/update/request_schema.json",
+	"VocabularyPatchRequest": "https://www.jisc.ac.uk/rdss/schema/messages/body/vocabulary/patch/request_schema.json",
+	"VocabularyReadRequest":  "https://www.jisc.ac.uk/rdss/schema/messages/body/vocabulary/read/request_schema.json",
+	"VocabularyReadResponse": "https://www.jisc.ac.uk/rdss/schema/messages/body/vocabulary/read/response_schema.json",
 }
 
-// NewValidator returns a Validator designed for the RDSS API.
-func NewValidator(schemasDir string) (Validator, error) {
+// schemaDocFinder is a function that given a reference like the ones found in
+// `rdssSchema` returns the corresponding stream of bytes of the schema document
+// that corresponds.
+type schemaDocFinder func(string) ([]byte, error)
+
+// DefaultSchemaDocFinder is used by localSchemaLoader to read the schema
+// documents from the local store. The default function depends on the
+// `specdata` package which is populated at build time. The tests use a custom
+// function so it can populate arbitrary documents.
+var DefaultSchemaDocFinder schemaDocFinder = rdssSchemaDocFinder
+
+// rdssSchemaDocFinder fetches the schema documents from the `specdata`
+// package.
+func rdssSchemaDocFinder(source string) ([]byte, error) {
+	return specdata.Asset(resolveSchemaRef(source))
+}
+
+// resolveSchemaRef knows the path of the schema assets in the specdata pkg.
+func resolveSchemaRef(source string) string {
+	source = strings.TrimSuffix(source, "/")
+	source = strings.TrimPrefix(source, rdssPrefix)
+	if !strings.HasPrefix(source, "messages/") {
+		source = fmt.Sprintf("schemas/%s", source)
+	}
+	return source
+}
+
+// NewValidator returns a Validator with all the RDSS API schemas loaded.
+func NewValidator() (Validator, error) {
 	v := &rdssValidator{
 		validators: make(map[string]*gojsonschema.Schema),
 	}
 
 	// Initialize schema validators.
+	loader := NewLocalSchemaLoaderFactory()
 	for name, path := range rdssSchemas {
-		loader := newReferenceLoader(schemasDir, path)
-		schema, err := gojsonschema.NewSchema(loader)
+		schema, err := gojsonschema.NewSchema(loader.New(path))
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "schema loader could not create a schema object from %s", path)
 		}
 		v.validators[name] = schema
 	}
@@ -55,6 +95,7 @@ func NewValidator(schemasDir string) (Validator, error) {
 	return v, nil
 }
 
+// Validate implementes Validator.
 func (v rdssValidator) Validate(msg *Message) (*gojsonschema.Result, error) {
 	loader := gojsonschema.NewBytesLoader(msg.body)
 	val, ok := v.validators[msg.Type()]
@@ -64,83 +105,67 @@ func (v rdssValidator) Validate(msg *Message) (*gojsonschema.Result, error) {
 	return val.Validate(loader)
 }
 
+// Validators implementes Validator.
 func (v rdssValidator) Validators() map[string]*gojsonschema.Schema {
 	return v.validators
 }
 
-// loaderFactory is a schema loader factory for JiscRDSS API.
-type loaderFactory struct {
-	baseDir string
-
-	// Default JSONLoader provided by gojsonschema
-	defaultLoader gojsonschema.JSONLoader
+type localSchemaLoaderFactory struct {
+	gojsonschema.JSONLoaderFactory
 }
 
-func (l loaderFactory) New(source string) gojsonschema.JSONLoader {
-	source = convertJiscRDSSURI(l.baseDir, source)
-	return l.defaultLoader.LoaderFactory().New(source)
+type localSchemaLoader struct {
+	gojsonschema.JSONLoader
+	source  string
+	factory localSchemaLoaderFactory
 }
 
-// convertJiscRDSSURI resolves JSON References used in the RDSS message API so
-// we can load the documents from disk. It is simlar to the
-// jsonchema.RefResolver created in the API test suite (https://git.io/vNe16)
-// but it avoids to list all the pairs explicitly.
-func convertJiscRDSSURI(baseDir, source string) string {
-	const prefix = "https://www.jisc.ac.uk/rdss/schema"
-	if !strings.HasPrefix(source, prefix) {
-		return source
-	}
-	source = strings.TrimSuffix(source, "/")
-	source = strings.TrimPrefix(source, prefix)
-	var path string
-	if strings.HasPrefix(source, "/messages/") {
-		path = filepath.Join(baseDir, source)
-	} else {
-		path = filepath.Join(baseDir, "schemas", source)
-	}
-	source = fmt.Sprintf("file://%s", path)
-	return source
+func NewLocalSchemaLoaderFactory() localSchemaLoaderFactory {
+	return localSchemaLoaderFactory{}
 }
 
-// referenceLoader is our custom JSON reference loader that relies in our custom
-// loader factory.
-type referenceLoader struct {
-	baseDir string
-	loader  gojsonschema.JSONLoader
-}
-
-func newReferenceLoader(baseDir string, path string) *referenceLoader {
-	path = fmt.Sprintf("file://%s", filepath.Join(baseDir, path))
-	return &referenceLoader{
-		baseDir: baseDir,
-		loader:  gojsonschema.NewReferenceLoader(path),
+func (f localSchemaLoaderFactory) New(source string) gojsonschema.JSONLoader {
+	return &localSchemaLoader{
+		JSONLoader: gojsonschema.NewReferenceLoader(source),
+		source:     source,
+		factory:    f,
 	}
 }
 
-func (l *referenceLoader) JsonSource() interface{} {
-	return l.loader.JsonSource()
+func (l *localSchemaLoader) JsonSource() interface{} {
+	return l.source
 }
 
-func (l *referenceLoader) JsonReference() (gojsonreference.JsonReference, error) {
-	return l.loader.JsonReference()
+func (l *localSchemaLoader) JsonReference() (gojsonreference.JsonReference, error) {
+	return gojsonreference.NewJsonReference(l.source)
 }
 
-func (l *referenceLoader) LoaderFactory() gojsonschema.JSONLoaderFactory {
-	return &loaderFactory{l.baseDir, l.loader}
+func (l *localSchemaLoader) LoaderFactory() gojsonschema.JSONLoaderFactory {
+	return l.factory
 }
 
-func (l *referenceLoader) LoadJSON() (interface{}, error) {
-	return l.loader.LoadJSON()
+func (l *localSchemaLoader) LoadJSON() (interface{}, error) {
+	ref, err := l.JsonReference()
+	if err != nil {
+		return nil, err
+	}
+	url := ref.GetUrl().String()
+	if !strings.HasPrefix(url, rdssPrefix) {
+		return l.JSONLoader.LoadJSON()
+	}
+	blob, err := DefaultSchemaDocFinder(url)
+	if err != nil {
+		return nil, err
+	}
+	return decodeJson(bytes.NewReader(blob))
 }
 
-// NoOpValidator is an implementation of Validator that validates all the
-// messages.
-type NoOpValidator struct{}
-
-func (v NoOpValidator) Validate(*Message) (*gojsonschema.Result, error) {
-	return &gojsonschema.Result{}, nil
-}
-
-func (v NoOpValidator) Validators() map[string]*gojsonschema.Schema {
-	return map[string]*gojsonschema.Schema{}
+func decodeJson(r io.Reader) (interface{}, error) {
+	var document interface{}
+	decoder := json.NewDecoder(r)
+	decoder.UseNumber()
+	if err := decoder.Decode(&document); err != nil {
+		return nil, err
+	}
+	return document, nil
 }

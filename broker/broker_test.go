@@ -20,14 +20,14 @@ func ExampleBroker() {
 	// See the definition of newBroker for more details.
 	var b, _, _ = newBroker(nil)
 
-	// Subscribe to MetadataCreate messages.
-	b.SubscribeType(message.MessageTypeMetadataCreate, func(msg *message.Message) error {
+	// Subscribe to MetadataDelete messages.
+	b.SubscribeType(message.MessageTypeMetadataDelete, func(msg *message.Message) error {
 		fmt.Println("MetadataCreate message received!")
 		return nil
 	})
 
-	// A publisher can publish a MetadataCreate request.
-	_ = b.Metadata.Create(context.Background(), &message.MetadataCreateRequest{})
+	// A publisher can publish a MetadataDelete request.
+	_ = b.Metadata.Delete(context.Background(), &message.MetadataDeleteRequest{})
 
 	// Output: MetadataCreate message received!
 }
@@ -43,21 +43,17 @@ func TestPanickingSubscriber(t *testing.T) {
 
 func TestCounter(t *testing.T) {
 	var b, _, _ = newBroker(nil)
-	_ = b.Metadata.Create(context.Background(), &message.MetadataCreateRequest{})
-	if got := b.Count(); got != 1 {
-		t.Fatalf("b.Count mismatch: got %d, want %d", got, 1)
-	}
 	_ = b.Metadata.Delete(context.Background(), &message.MetadataDeleteRequest{})
 	_ = b.Vocabulary.Patch(context.Background(), &message.VocabularyPatchRequest{})
-	if got := b.Count(); got != 3 {
-		t.Fatalf("b.Count mismatch: got %d, want %d", got, 3)
+	if got, want := b.Count(), uint64(2); got != want {
+		t.Fatalf("b.Count mismatch: got %d, want %d", got, want)
 	}
 }
 
 func Test_messageHandler_duplicated(t *testing.T) {
 	var (
 		b, _, _ = newBroker(nil)
-		m       = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+		m       = message.New(message.MessageTypeMetadataDelete, message.MessageClassCommand)
 	)
 	send := func() { _ = b.Request(context.Background(), m) }
 	// Send the same message twice.
@@ -100,7 +96,7 @@ func Test_messageHandler_errorHandling(t *testing.T) {
 		return nil
 	})
 	// Send a message
-	_ = b.Metadata.Create(context.Background(), &message.MetadataCreateRequest{})
+	_ = b.Metadata.Delete(context.Background(), &message.MetadataDeleteRequest{})
 	// Wait up to a second, fail if the message is not received in time.
 	go func() {
 		time.Sleep(1 * time.Second)
@@ -130,7 +126,7 @@ func Test_exists(t *testing.T) {
 
 func Test_exists_putFails(t *testing.T) {
 	var (
-		b, h, _ = newBroker(nil)
+		b, _, _ = newBroker(nil)
 		m       = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
 	)
 	b.repository = &putErrRepo{b.repository}
@@ -142,9 +138,6 @@ func Test_exists_putFails(t *testing.T) {
 	// because putErrRepo failed to persist it.
 	if b.exists(m) {
 		t.Fatal("b.exists() should have returned false because the message *was* new to the system")
-	}
-	if entries := h.AllEntries(); len(entries) != 3 {
-		t.Fatalf("Expected 2 log entries in the logger, %d seen", len(entries))
 	}
 }
 
