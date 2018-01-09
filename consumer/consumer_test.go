@@ -101,7 +101,7 @@ func TestValidMetadataDeleteMessage(t *testing.T) {
 	// Build message MetadataDelete
 	msg := message.New(message.MessageTypeMetadataDelete, message.MessageClassCommand)
 	body := &message.MetadataDeleteRequest{
-		ObjectUuid: "a90652dd-6abd-424c-b7ce-d6728c7f3f9f",
+		ObjectUuid: message.MustUUID("a90652dd-6abd-424c-b7ce-d6728c7f3f9f"),
 	}
 	msg.MessageBody = body
 
