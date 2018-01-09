@@ -31,11 +31,13 @@ const (
       "position": 0,
       "total": 0
     },
-    "messageHistory": {
-      "machineId": "foo",
-      "machineAddress": "bar",
-      "timestamp": "1997-07-16T19:20:00+01:00"
-    },
+    "messageHistory": [
+      {
+        "machineId": "foo",
+        "machineAddress": "bar",
+        "timestamp": "1997-07-16T19:20:00+01:00"
+      }
+    ],
     "version": "1.3.0"
   },
   "messageBody": {
@@ -201,10 +203,12 @@ func TestMessage_ToJSON(t *testing.T) {
 					ID:           MustUUID("4e5bef43-21b1-4ef4-b850-dbae05b4882d"),
 					MessageClass: MessageClassCommand,
 					MessageType:  MessageTypeMetadataCreate,
-					MessageHistory: MessageHistory{
-						MachineId:      "foo",
-						MachineAddress: "bar",
-						Timestamp:      Timestamp(time.Date(1997, time.July, 16, 19, 20, 0, 0, time.FixedZone("+0100", 3600))),
+					MessageHistory: []MessageHistory{
+						MessageHistory{
+							MachineId:      "foo",
+							MachineAddress: "bar",
+							Timestamp:      Timestamp(time.Date(1997, time.July, 16, 19, 20, 0, 0, time.FixedZone("+0100", 3600))),
+						},
 					},
 					MessageSequence: MessageSequence{
 						Sequence: MustUUID("6ad8194d-d1d0-4389-a64d-c73d761463c9"),

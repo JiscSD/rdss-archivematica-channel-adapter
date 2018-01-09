@@ -10,23 +10,17 @@ import (
 // including the type of Message, routing information, timings, sequencing, and
 // so forth.
 type MessageHeader struct {
-	ID              *UUID           `json:"messageId"`
-	CorrelationID   string          `json:"correlationId,omitempty"`
-	MessageClass    MessageClass    `json:"messageClass"`
-	MessageType     MessageType     `json:"messageType"`
-	ReturnAddress   string          `json:"returnAddress,omitempty"`
-	MessageTimings  MessageTimings  `json:"messageTimings"`
-	MessageSequence MessageSequence `json:"messageSequence"`
-	// The multiplicity of `messageHistory` based on the spec is `0..*` but the
-	// message examples seen used `object` instead of `array` to encode
-	// single-item lists. We're going to use `MessageHistory` instead of
-	// `[]MessageHistory` until this is clarified but we will not be able to
-	// decode the message when `array` is used. We could support both types by
-	// if we make `MessageHistory` implement `Unmarshaler`.
-	MessageHistory   MessageHistory `json:"messageHistory,omitempty"`
-	Version          string         `json:"version"`
-	ErrorCode        string         `json:"errorCode,omitempty"`
-	ErrorDescription string         `json:"errorDescription,omitempty"`
+	ID               *UUID            `json:"messageId"`
+	CorrelationID    string           `json:"correlationId,omitempty"`
+	MessageClass     MessageClass     `json:"messageClass"`
+	MessageType      MessageType      `json:"messageType"`
+	ReturnAddress    string           `json:"returnAddress,omitempty"`
+	MessageTimings   MessageTimings   `json:"messageTimings"`
+	MessageSequence  MessageSequence  `json:"messageSequence"`
+	MessageHistory   []MessageHistory `json:"messageHistory,omitempty"`
+	Version          string           `json:"version"`
+	ErrorCode        string           `json:"errorCode,omitempty"`
+	ErrorDescription string           `json:"errorDescription,omitempty"`
 }
 
 // MessageClass is one of Command, Event or Document.
