@@ -34,7 +34,7 @@ secret_key = ""
 region = ""
 
 [consumer]
-archivematica_transfer_deposit_dir = "/var/archivematica/sharedDirectory/watchedDirectories/activeTransfers/standardTransfer"
+archivematica_shared_dir = "/var/archivematica/sharedDirectory"
 
 [publisher]
 listen = "0.0.0.0:8000"

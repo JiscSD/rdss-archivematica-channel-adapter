@@ -25,12 +25,12 @@ type Consumer interface {
 
 // ConsumerImpl is an implementation of Consumer.
 type ConsumerImpl struct {
-	broker    *broker.Broker
-	ctx       context.Context
-	logger    log.FieldLogger
-	amc       *amclient.Client
-	s3        s3.ObjectStorage
-	depositFs afero.Fs
+	broker     *broker.Broker
+	ctx        context.Context
+	logger     log.FieldLogger
+	amc        *amclient.Client
+	s3         s3.ObjectStorage
+	amSharedFs afero.Fs
 }
 
 // MakeConsumer returns a new ConsumerImpl which implements Consumer
@@ -40,14 +40,14 @@ func MakeConsumer(
 	broker *broker.Broker,
 	amc *amclient.Client,
 	s3 s3.ObjectStorage,
-	depositFs afero.Fs) *ConsumerImpl {
+	amSharedFs afero.Fs) *ConsumerImpl {
 	return &ConsumerImpl{
-		ctx:       ctx,
-		logger:    logger,
-		broker:    broker,
-		amc:       amc,
-		s3:        s3,
-		depositFs: depositFs,
+		ctx:        ctx,
+		logger:     logger,
+		broker:     broker,
+		amc:        amc,
+		s3:         s3,
+		amSharedFs: amSharedFs,
 	}
 }
 
@@ -73,7 +73,7 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 		return nil
 	}
 
-	t, err := c.amc.TransferSession(body.ObjectTitle, c.depositFs)
+	t, err := c.amc.TransferSession(body.ObjectTitle, c.amSharedFs)
 	if err != nil {
 		return err
 	}

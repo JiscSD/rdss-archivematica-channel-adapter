@@ -62,12 +62,12 @@ func start() {
 		logger.Fatalln(err)
 	}
 
-	depositDir := viper.GetString("consumer.archivematica_transfer_deposit_dir")
-	depositFs := afero.NewBasePathFs(afero.NewOsFs(), depositDir)
+	amSharedDir := viper.GetString("consumer.archivematica_shared_dir")
+	amSharedFs := afero.NewBasePathFs(afero.NewOsFs(), amSharedDir)
 
 	quit := make(chan struct{})
 	go func() {
-		c := consumer.MakeConsumer(ctx, logger, br, createAmClient(), s3Client, depositFs)
+		c := consumer.MakeConsumer(ctx, logger, br, createAmClient(), s3Client, amSharedFs)
 		c.Start()
 
 		quit <- struct{}{}

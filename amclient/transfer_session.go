@@ -17,12 +17,34 @@ import (
 	"github.com/spf13/afero"
 )
 
+const (
+	// standardTransferType is the value we need to pass to the Approve API
+	// to indicate that we're creating a standard transfer.
+	standardTransferType = "standard"
+
+	// standardTransferDir is the location of the directory where transfers need
+	// to be moved. Relative to the shared directory (see amSharedFs).
+	standardTransferDir = "watchedDirectories/activeTransfers/standardTransfer"
+
+	// Relative to the shared directory (see amSharedFs).
+	tmpDir = "tmp"
+)
+
 // TransferSession lets you prepare a new transfer and submit it to
 // Archivematica. It is a convenience tool around the transfer service.
 type TransferSession struct {
-	c    *Client
-	fs   *afero.Afero
-	Path string
+	// Archivematica HTTP client.
+	c *Client
+
+	// Transfer's filesystem.
+	fs *afero.Afero
+
+	// Archivematica Shared Directory filesystem.
+	amSharedFs *afero.Afero
+
+	// Original name given to the transfer. The `move` method may change the
+	// final name if the desired name is already taken in `standardTransferDir`.
+	originalName string
 
 	Metadata        *MetadataSet
 	ChecksumsMD5    *ChecksumSet
@@ -30,45 +52,85 @@ type TransferSession struct {
 	ChecksumsSHA256 *ChecksumSet
 }
 
+// tempDir creates a new temporary directory in the Acchivematica Shared Directory.
+func tempDir(amSharedFs afero.Fs) (string, error) {
+	return afero.TempDir(amSharedFs, tmpDir, "amclientTransfer")
+}
+
 // NewTransferSession returns a pointer to a new TransferSession.
-func NewTransferSession(c *Client, name string, depositFs afero.Fs) (*TransferSession, error) {
-	var (
-		// The transfer folder is going to be created under depositFs after the
-		// name provided. If the directory already exists we'll attempt to add
-		// a numeric suffix corresponding to the number of attempts, e.g.:
-		// Test, Test-1, Test-2... up to `maxTries` attempts - when the maximum
-		// is reached, an error is reaturned instead.
-		counter  = 1
-		maxTries = 20
-	)
-	name = safeFileName(name)
-	var nName = name
-	for {
-		err := depositFs.Mkdir(nName, os.FileMode(0755))
-		if err == nil {
-			fs := afero.NewBasePathFs(depositFs, nName)
-			ts := &TransferSession{
-				c:    c,
-				fs:   &afero.Afero{Fs: fs},
-				Path: afero.FullBaseFsPath(fs.(*afero.BasePathFs), "/"),
-			}
-			ts.Metadata = NewMetadataSet(ts.fs)
-			ts.ChecksumsMD5 = NewChecksumSet("md5", ts.fs)
-			ts.ChecksumsSHA1 = NewChecksumSet("sha1", ts.fs)
-			ts.ChecksumsSHA256 = NewChecksumSet("sha256", ts.fs)
-			return ts, nil
-		}
-		nName = fmt.Sprintf("%s-%d", name, counter)
-		counter++
-		if counter == maxTries {
-			return nil, errors.Wrap(err, "Too many attempts. Last error")
-		}
+func NewTransferSession(c *Client, name string, amSharedFs afero.Fs) (*TransferSession, error) {
+	tmpDir, err := tempDir(amSharedFs)
+	if err != nil {
+		return nil, errors.Wrap(err, "temporary folder cannot be created")
 	}
+	ts := &TransferSession{
+		c:            c,
+		fs:           &afero.Afero{Fs: afero.NewBasePathFs(amSharedFs, tmpDir)},
+		amSharedFs:   &afero.Afero{Fs: amSharedFs},
+		originalName: name,
+	}
+	ts.Metadata = NewMetadataSet(ts.fs)
+	ts.ChecksumsMD5 = NewChecksumSet("md5", ts.fs)
+	ts.ChecksumsSHA1 = NewChecksumSet("sha1", ts.fs)
+	ts.ChecksumsSHA256 = NewChecksumSet("sha256", ts.fs)
+	return ts, nil
 }
 
 // TransferSession returns a new transfer session.
 func (c *Client) TransferSession(name string, depositFs afero.Fs) (*TransferSession, error) {
 	return NewTransferSession(c, name, depositFs)
+}
+
+// path returns the path of the transfer directory relative to amSharedFs.
+func (s *TransferSession) path() string {
+	name, err := filepath.Rel(
+		afero.FullBaseFsPath(s.amSharedFs.Fs.(*afero.BasePathFs), "/"),
+		s.fullPath(),
+	)
+	if err != nil {
+		return ""
+	}
+	return name
+}
+
+// fullPath returns the absolute path of the transfer directory.
+func (s *TransferSession) fullPath() string {
+	return afero.FullBaseFsPath(s.fs.Fs.(*afero.BasePathFs), "/")
+}
+
+// maxRenameAttempts is the no. of attempts that move() performs before giving up.
+var maxRenameAttempts = 20
+
+// move moves the transfer directory to `standardTransfer`. If the target
+// location already exists we'll attempt to add a numeric suffix corresponding
+// to the number of attempts, e.g.: Test, Test-1, Test-2... up to `maxtTries`
+// attempts. An error is returned when the maximum number of attempts is
+// reached.
+func (s *TransferSession) move() error {
+	var (
+		counter = 1
+		name    = filepath.Join(standardTransferDir, safeFileName(s.originalName))
+		nName   = name
+	)
+	for {
+		err := s.amSharedFs.Rename(s.path(), nName)
+		if err == nil {
+			// Succeeded. Update s.fs before we return.
+			s.fs = &afero.Afero{
+				Fs: afero.NewBasePathFs(afero.NewOsFs(), filepath.Join(
+					afero.FullBaseFsPath(s.amSharedFs.Fs.(*afero.BasePathFs), "/"),
+					nName,
+				)),
+			}
+			break
+		}
+		nName = fmt.Sprintf("%s-%d", name, counter)
+		counter++
+		if counter >= maxRenameAttempts {
+			return fmt.Errorf("max. number of attempts to create the standard transfer directory reached (%d) - last error: %v", maxRenameAttempts, err)
+		}
+	}
+	return nil
 }
 
 // Create creates a file in the filesystem, returning the file and an error, if
@@ -102,11 +164,7 @@ func (s *TransferSession) ProcessingConfig(name string) error {
 
 // Start submits the transfer to Archivematica.
 func (s *TransferSession) Start() error {
-	var (
-		ctx      = context.Background()
-		req      = &TransferUnapprovedRequest{}
-		basePath = path.Base(s.Path)
-	)
+	ctx := context.Background()
 
 	if err := s.createMetadataDir(); err != nil {
 		return err
@@ -120,11 +178,29 @@ func (s *TransferSession) Start() error {
 		return err
 	}
 
-	// This is our approval function. We start making sure that the function is
-	// listed as unapproved or retry until it does. If it's positive, then try
-	// to approve it.
-	//
-	// It doesn't give up if the server returns errors.
+	// Move to standard transfer.
+	if err := s.move(); err != nil {
+		return errors.Wrap(err, "transfer could not be moved to standard transfer")
+	}
+
+	return s.approve(ctx)
+}
+
+// approve requests Archivematica to approve a transfer that has been already
+// moved to the corresponding watched directory. It first ensures that the
+// transfer is listed as unapproved and waits until it does. If positive, it
+// attempts to approve it. It uses retries and timeouts. It does not give up if
+// the server returns an error.
+func (s *TransferSession) approve(ctx context.Context) error {
+	var (
+		req              = &TransferUnapprovedRequest{}
+		transferPath     = s.path()
+		transferBasePath = path.Base(transferPath)
+	)
+	const (
+		maxElapsedTime = 10 * time.Minute
+		maxInterval    = 30 * time.Second
+	)
 	op := func() error {
 		payload, _, err := s.c.Transfer.Unapproved(ctx, req)
 		if err != nil {
@@ -134,10 +210,10 @@ func (s *TransferSession) Start() error {
 		}
 		// Check if the transfer is listed as unapproved.
 		for _, item := range payload.Results {
-			if item.Directory == basePath {
+			if item.Directory == transferBasePath {
 				_, _, err := s.c.Transfer.Approve(ctx, &TransferApproveRequest{
-					Directory: s.Path,
-					Type:      "standard",
+					Directory: transferPath,
+					Type:      standardTransferType,
 				})
 				if err != nil {
 					// We've tried but it failed. Retry.
@@ -146,13 +222,13 @@ func (s *TransferSession) Start() error {
 				return nil
 			}
 		}
-		// We're going to keep trying
+		// We're going to keep trying.
 		return errors.New("transfer is not listed yet - keep trying")
 	}
 
 	bo := backoff.NewExponentialBackOff()
-	bo.MaxElapsedTime = 10 * time.Minute
-	bo.MaxInterval = 30 * time.Second
+	bo.MaxElapsedTime = maxElapsedTime
+	bo.MaxInterval = maxInterval
 
 	return backoff.Retry(op, bo)
 }

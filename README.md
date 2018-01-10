@@ -105,11 +105,11 @@ When set to a non-empty string, it's combined with `S3.ACCESS_KEY` to set up the
 
 AWS Region. If empty, the AWS SDK will throw an error. E.g.: `eu-west-2`.
 
-:heavy_minus_sign: `CONSUMER.ARCHIVEMATICA_TRANSFER_DEPOSIT_DIR`
+:heavy_minus_sign: `CONSUMER.ARCHIVEMATICA_SHARED_DIR`
 
-> Default: `"/var/archivematica/sharedDirectory/watchedDirectories/activeTransfers/standardTransfer"`
+> Default: `"/var/archivematica/sharedDirectory"`
 
-Location of the `standardTransfer` directory of the Archivematica pipeline.
+Location of the Archivematica Shared Directory.
 
 :heavy_minus_sign: `PUBLISHER.LISTEN`
 
