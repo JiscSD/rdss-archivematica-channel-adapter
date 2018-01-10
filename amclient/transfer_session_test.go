@@ -237,6 +237,22 @@ func TestTransferSession_Contents(t *testing.T) {
 	}
 }
 
+func TestTransferSession_Destroy(t *testing.T) {
+	var (
+		ts   = newTransferSession(t, "")
+		path = ts.path()
+	)
+	afero.TempFile(ts.fs, "/", "uno")
+	afero.TempFile(ts.fs, "/", "dos")
+
+	if err := ts.Destroy(); err != nil {
+		t.Fatalf("TransferSession.Destroy() returned an error: %v", err)
+	}
+	if found, err := ts.amSharedFs.DirExists(path); err != nil || found {
+		t.Fatalf("TransferSession.Destroy() didn't have the expected results; err=%v, found=%t", err, found)
+	}
+}
+
 func TestTransferSession_createMetadataDir(t *testing.T) {
 	ts := newTransferSession(t, "")
 

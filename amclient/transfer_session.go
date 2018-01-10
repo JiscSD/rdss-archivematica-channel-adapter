@@ -250,6 +250,13 @@ func (s *TransferSession) Contents() []string {
 	return paths
 }
 
+// Destroy removes the transfer directory and its contents. The caller should
+// not expect TransferSession to be in a usable state once this method has been
+// called.
+func (s *TransferSession) Destroy() error {
+	return s.amSharedFs.RemoveAll(s.path())
+}
+
 // DescribeFile registers metadata of a file. It causes the transfer to include
 // a `metadata.json` file with the metadata of each file described.
 func (s *TransferSession) DescribeFile(name, field, value string) {
