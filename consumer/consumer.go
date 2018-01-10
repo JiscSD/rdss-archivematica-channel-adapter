@@ -101,7 +101,6 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 
 		// Download and describe each file.
 		// Using an anonymous function so I can use defer inside this loop.
-		var err error
 		func() {
 			var f afero.File
 			f, err = t.Create(file.FileName)
@@ -115,9 +114,17 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 			}
 			describeFile(t, file.FileName, &file)
 		}()
-		if err != nil {
-			return err
+
+		// Just a single error is enough for us to halt the transfer completely.
+		if err == nil {
+			continue
 		}
+		defer func() {
+			if err := t.Destroy(); err != nil {
+				c.logger.Warningf("Error destroying transfer: %v", err)
+			}
+		}()
+		return err
 	}
 
 	return t.Start()
