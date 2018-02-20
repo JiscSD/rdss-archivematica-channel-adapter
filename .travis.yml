@@ -1,7 +1,12 @@
 ---
 language: go
 go:
-  - 1.9.1
+  - 1.x
+  - tip
+matrix:
+  allow_failures:
+    - go: tip
+  fast_finish: true
 install:
   - make tools
   - go get github.com/mattn/goveralls
