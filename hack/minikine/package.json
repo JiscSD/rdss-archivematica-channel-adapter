@@ -9,6 +9,6 @@
   "dependencies": {
     "aws-sdk": "^2.39.0",
     "dynalite": "^1.2.0",
-    "kinesalite": "git://github.com/teamdoug/kinesalite.git#dwe-default-time"
+    "kinesalite": "^1.11.7"
   }
 }
