@@ -127,7 +127,13 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 		return err
 	}
 
-	return t.Start()
+	id, err := t.Start()
+	if err != nil {
+		return err
+	}
+	c.logger.Debugf("The transfer has started successfully, id: %s", id)
+
+	return nil
 }
 
 // retry is a retry-backoff time provider that manages times between retries for the http storage type.

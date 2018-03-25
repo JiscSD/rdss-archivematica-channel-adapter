@@ -46,6 +46,12 @@ type TransferSession struct {
 	// final name if the desired name is already taken in `standardTransferDir`.
 	originalName string
 
+	// ID of the transfer associated to this session. Its value is populated as
+	// soon as it is communicated to us by Archivematica which typically happens
+	// when we receive the repsonse to the transfer approval request - see
+	// TransferApproveResponse for more details.
+	id string
+
 	Metadata        *MetadataSet
 	ChecksumsMD5    *ChecksumSet
 	ChecksumsSHA1   *ChecksumSet
@@ -162,28 +168,28 @@ func (s *TransferSession) ProcessingConfig(name string) error {
 	return s.fs.SafeWriteReader("/processingMCP.xml", config)
 }
 
-// Start submits the transfer to Archivematica.
-func (s *TransferSession) Start() error {
+// Start the transfer in Archivematica. It returns the ID of the transfer.
+func (s *TransferSession) Start() (string, error) {
 	ctx := context.Background()
 
 	if err := s.createMetadataDir(); err != nil {
-		return err
+		return "", err
 	}
 
 	if err := s.Metadata.Write(); err != nil {
-		return err
+		return "", err
 	}
 
 	if err := s.createChecksumsFiles(); err != nil {
-		return err
+		return "", err
 	}
 
 	// Move to standard transfer.
 	if err := s.move(); err != nil {
-		return errors.Wrap(err, "transfer could not be moved to standard transfer")
+		return "", errors.Wrap(err, "transfer could not be moved to standard transfer")
 	}
 
-	return s.approve(ctx)
+	return s.id, s.approve(ctx)
 }
 
 // approve requests Archivematica to approve a transfer that has been already
@@ -211,7 +217,7 @@ func (s *TransferSession) approve(ctx context.Context) error {
 		// Check if the transfer is listed as unapproved.
 		for _, item := range payload.Results {
 			if item.Directory == transferBasePath {
-				_, _, err := s.c.Transfer.Approve(ctx, &TransferApproveRequest{
+				resp, _, err := s.c.Transfer.Approve(ctx, &TransferApproveRequest{
 					Directory: transferPath,
 					Type:      standardTransferType,
 				})
@@ -219,6 +225,7 @@ func (s *TransferSession) approve(ctx context.Context) error {
 					// We've tried but it failed. Retry.
 					return errors.Wrap(err, "approve request failed")
 				}
+				s.id = resp.UUID
 				return nil
 			}
 		}

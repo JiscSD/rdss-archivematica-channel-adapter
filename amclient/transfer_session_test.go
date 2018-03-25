@@ -69,7 +69,9 @@ func (tsm *transferServiceMock) Start(ctx context.Context, req *TransferStartReq
 
 func (tsm *transferServiceMock) Approve(ctx context.Context, req *TransferApproveRequest) (*TransferApproveResponse, *Response, error) {
 	tsm.approveReq = req
-	return &TransferApproveResponse{}, &Response{}, nil
+	return &TransferApproveResponse{
+		UUID: "13d9e74c-f88a-44c3-9657-c756eb3fa1c8",
+	}, &Response{}, nil
 }
 
 func (tsm *transferServiceMock) Unapproved(ctx context.Context, req *TransferUnapprovedRequest) (*TransferUnapprovedResponse, *Response, error) {
@@ -275,8 +277,12 @@ func TestTransferSession_createMetadataDir(t *testing.T) {
 func TestTransferSession_Start(t *testing.T) {
 	ts := newTransferSession(t, "Test")
 
-	if err := ts.Start(); err != nil {
+	id, err := ts.Start()
+	if err != nil {
 		t.Fatalf("TransferSession.Start() failed: %v", err)
+	}
+	if have, want := id, ts.id; have != want {
+		t.Errorf("Have %s, want %s", have, want)
 	}
 
 	transferService := ts.c.Transfer.(*transferServiceMock)
