@@ -17,6 +17,11 @@ import (
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3"
 )
 
+// The name of the processing configuration that we're going to include in the
+// transfers. The name is convened and the server ensures that it's going to be
+// available at all times.
+const automatedProcessingConfiguration = "automated"
+
 // Consumer is the component that subscribes to the broker and interacts with
 // Archivematica.
 type Consumer interface {
@@ -79,9 +84,9 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 	}
 
 	// Download automated workflow.
-	err = t.ProcessingConfig("automated")
+	err = t.ProcessingConfig(automatedProcessingConfiguration)
 	if err != nil {
-		c.logger.Warningf("Failed to download `automated` processing configuration: %s", err)
+		c.logger.Warningf("Failed to download `%s` processing configuration: %s", automatedProcessingConfiguration, err)
 	}
 
 	// Process dataset metadata.
