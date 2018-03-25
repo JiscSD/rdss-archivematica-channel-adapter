@@ -39,6 +39,7 @@ type Client struct {
 	// Services used for communicating with the API
 	Transfer         TransferService
 	ProcessingConfig ProcessingConfigService
+	Package          PackageService
 
 	// Local temporary filesystem. See transfer_session.go for more details.
 	Fs afero.Fs
@@ -79,6 +80,7 @@ func NewClient(httpClient *http.Client, bu, u, k string) *Client {
 	}
 	c.Transfer = &TransferServiceOp{client: c}
 	c.ProcessingConfig = &ProcessingConfigOp{client: c}
+	c.Package = &PackageServiceOp{client: c}
 	return c
 }
 
