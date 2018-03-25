@@ -1,6 +1,7 @@
 package amclient
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -15,8 +16,9 @@ import (
 )
 
 const (
-	userAgent = "rdss-archivematica-channel-adapter"
-	mediaType = "application/x-www-form-urlencoded"
+	userAgent     = "rdss-archivematica-channel-adapter"
+	mediaTypeForm = "application/x-www-form-urlencoded"
+	mediaTypeJSON = "application/json"
 )
 
 // Client manages communication with Archivematica API.
@@ -122,11 +124,7 @@ func WithRequestAcceptXML() RequestOpt {
 	}
 }
 
-// NewRequest creates an API request. A relative URL can be provided in urlStr,
-// which will be resolved to the BaseURL of the Client. Relative URLS should
-// always be specified without a preceding slash. If specified, the value
-// pointed to by body is JSON encoded and included in as the request body.
-func (c *Client) NewRequest(ctx context.Context, method, urlStr string, body interface{}, opts ...RequestOpt) (*http.Request, error) {
+func (c *Client) newRequest(ctx context.Context, method, urlStr, mediaType string, body io.Reader, opts ...RequestOpt) (*http.Request, error) {
 	rel, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, err
@@ -134,11 +132,7 @@ func (c *Client) NewRequest(ctx context.Context, method, urlStr string, body int
 
 	u := c.BaseURL.ResolveReference(rel)
 
-	form := url.Values{}
-	encoder := schema.NewEncoder()
-	encoder.Encode(body, form)
-
-	req, err := http.NewRequest(method, u.String(), strings.NewReader(form.Encode()))
+	req, err := http.NewRequest(method, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -153,6 +147,29 @@ func (c *Client) NewRequest(ctx context.Context, method, urlStr string, body int
 	}
 
 	return req, nil
+}
+
+// NewRequest creates an API request. A relative URL can be provided in urlStr,
+// which will be resolved to the BaseURL of the Client. Relative URLS should
+// always be specified without a preceding slash. If specified, the value
+// pointed to by body is form encoded and included in as the request body.
+func (c *Client) NewRequest(ctx context.Context, method, urlStr string, body interface{}, opts ...RequestOpt) (*http.Request, error) {
+	form := url.Values{}
+	encoder := schema.NewEncoder()
+	encoder.Encode(body, form)
+	reader := strings.NewReader(form.Encode())
+	return c.newRequest(ctx, method, urlStr, mediaTypeForm, reader, opts...)
+}
+
+// NewRequestJSON is similar to NewRequest but encodes the value to JSON.
+func (c *Client) NewRequestJSON(ctx context.Context, method, urlStr string, body interface{}, opts ...RequestOpt) (*http.Request, error) {
+	buf := new(bytes.Buffer)
+	if body != nil {
+		if err := json.NewEncoder(buf).Encode(body); err != nil {
+			return nil, err
+		}
+	}
+	return c.newRequest(ctx, method, urlStr, mediaTypeJSON, buf, opts...)
 }
 
 // newResponse creates a new Response for the provided http.Response

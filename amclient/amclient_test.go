@@ -1,8 +1,10 @@
 package amclient
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -117,5 +119,33 @@ func TestNewRequest(t *testing.T) {
 	// Test that the Authorization header is included.
 	if got, want := req.Header.Get("Authorization"), fmt.Sprintf("ApiKey %s:%s", user, password); got != want {
 		t.Fatalf("NewRequest() Authorization header: %v, want %v", got, want)
+	}
+}
+
+func TestNewRequestJSON(t *testing.T) {
+	var (
+		baseURL  = "http://127.0.0.1"
+		user     = "Us3r"
+		password = "Pa33w0rd"
+	)
+
+	c, _ := New(nil, baseURL, user, password)
+
+	inBody := struct {
+		Test string `json:"string"`
+	}{Test: "foobar"}
+	req, _ := c.NewRequestJSON(context.Background(), "GET", "/foo", inBody)
+
+	// Test that the Authorization header is included.
+	if got, want := req.Header.Get("Content-Type"), mediaTypeJSON; got != want {
+		t.Fatalf("NewRequest() Content-Type header: %v, want %v", got, want)
+	}
+
+	got, _ := ioutil.ReadAll(req.Body)
+	want := []byte(`{"string":"foobar"}
+`)
+	defer req.Body.Close()
+	if !bytes.Equal(got, want) {
+		t.Fatalf("NewRequest() Body, got: %s, want %s", got, want)
 	}
 }
