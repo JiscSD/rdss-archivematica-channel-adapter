@@ -9,7 +9,7 @@ type VocabularyReadRequest struct {
 func (m Message) VocabularyReadRequest() (*VocabularyReadRequest, error) {
 	b, ok := m.MessageBody.(*VocabularyReadRequest)
 	if !ok {
-		return nil, fmt.Errorf("interface conversion error")
+		return nil, fmt.Errorf("VocabularyReadRequest(): interface conversion error")
 	}
 	return b, nil
 }
@@ -22,7 +22,7 @@ type VocabularyReadResponse struct {
 func (m Message) VocabularyReadResponse() (*VocabularyReadResponse, error) {
 	b, ok := m.MessageBody.(*VocabularyReadResponse)
 	if !ok {
-		return nil, fmt.Errorf("interface conversion error")
+		return nil, fmt.Errorf("VocabularyReadResponse(): interface conversion error")
 	}
 	return b, nil
 }
@@ -36,7 +36,7 @@ type VocabularyPatchRequest struct {
 func (m Message) VocabularyPatchRequest() (*VocabularyPatchRequest, error) {
 	b, ok := m.MessageBody.(*VocabularyPatchRequest)
 	if !ok {
-		return nil, fmt.Errorf("interface conversion error")
+		return nil, fmt.Errorf("VocabularyPatchRequest(): interface conversion error")
 	}
 	return b, nil
 }
