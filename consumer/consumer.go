@@ -18,8 +18,7 @@ import (
 )
 
 // The name of the processing configuration that we're going to include in the
-// transfers. The name is convened and the server ensures that it's going to be
-// available at all times.
+// transfers. The "automated" configuration is made available by MCPServer.
 const automatedProcessingConfiguration = "automated"
 
 // Consumer is the component that subscribes to the broker and interacts with
@@ -36,6 +35,10 @@ type ConsumerImpl struct {
 	amc        *amclient.Client
 	s3         s3.ObjectStorage
 	amSharedFs afero.Fs
+
+	// storage supports the persistency of certain data attributes that we
+	// need to access to implement a RDSS preservation system.
+	storage storage
 }
 
 // MakeConsumer returns a new ConsumerImpl which implements Consumer
@@ -53,45 +56,93 @@ func MakeConsumer(
 		amc:        amc,
 		s3:         s3,
 		amSharedFs: amSharedFs,
+		storage:    newStorageInMemory(),
 	}
 }
 
 // Start implements Consumer
 func (c *ConsumerImpl) Start() {
 	c.broker.SubscribeType(message.MessageTypeMetadataCreate, c.handleMetadataCreateRequest)
+	c.broker.SubscribeType(message.MessageTypeMetadataUpdate, c.handleMetadataUpdateRequest)
 
 	<-c.ctx.Done()
 	c.broker.Close()
 	c.logger.Info("Consumer says good-bye!")
 }
 
-// handleMetadataCreateRequest handles the reception of a Metadata Create
+// handleMetadataCreateRequest handles the reception of Metadata Create
 // messages.
 func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 	body, err := msg.MetadataCreateRequest()
 	if err != nil {
 		return err
 	}
-
-	// Ignore messages with no files listed.
-	if len(body.ObjectFile) == 0 {
-		return nil
-	}
-
-	t, err := c.amc.TransferSession(body.ObjectTitle, c.amSharedFs)
+	id, err := c.startTransfer(&body.ResearchObject)
 	if err != nil {
 		return err
 	}
+	c.logger.Debugf("The transfer has started successfully, id: %s", id)
+	if err := c.storage.AssociateResearchObject(c.ctx, body.ObjectUuid.String(), id); err != nil {
+		// We don't want to discard the message at this point.
+		c.logger.Errorf("Error trying to persist the research object: %v", err)
+	}
+	return nil
+}
 
+// handleMetadataUpdateRequest handles the reception of Metadata Update
+// messages. It may result in a package being reingested if it's been already
+// preserved before.
+func (c *ConsumerImpl) handleMetadataUpdateRequest(msg *message.Message) error {
+	logger := c.logger.WithFields(log.Fields{"handler": "MetadataUpdate", "message": msg.ID()})
+	body, err := msg.MetadataUpdateRequest()
+	if err != nil {
+		return err
+	}
+	// Determine if the message is pointing to a previous dataset.
+	var match *message.Identifier
+	for _, item := range body.ObjectRelatedIdentifier {
+		if item.RelationType != message.RelationTypeEnum_isNewVersionOf {
+			continue
+		}
+		match = &item
+		break // If there's more than one match we're not going to care.
+	}
+	if match == nil || match.IdentifierValue == "" {
+		logger.Debug("Ignoring message.")
+		return nil // Stop here, ignore message.
+	}
+	// Determine match.IdentifierValue's (ObjectUUID) is a known dataset.
+	transferID, err := c.storage.GetResearchObject(c.ctx, match.IdentifierValue)
+	if err != nil {
+		logger.WithFields(log.Fields{"err": err, "IdentifierValue": match.IdentifierValue}).Warn("Cannot fetch or find associated object in the local store.")
+		return nil
+	}
+	// At this point we know the previous transferID so we could reingest.
+	// In this first iteration we're just starting a new transfer.
+	logger.WithFields(log.Fields{"transferID": transferID, "TODO": "Implement real reingest."}).Debug("Reingesting transfer.")
+	_, err = c.startTransfer(&body.ResearchObject)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ConsumerImpl) startTransfer(body *message.ResearchObject) (string, error) {
+	// Ignore messages with no files listed.
+	if len(body.ObjectFile) == 0 {
+		return "", nil
+	}
+	t, err := c.amc.TransferSession(body.ObjectTitle, c.amSharedFs)
+	if err != nil {
+		return "", err
+	}
 	// Download automated workflow.
 	err = t.ProcessingConfig(automatedProcessingConfiguration)
 	if err != nil {
 		c.logger.Warningf("Failed to download `%s` processing configuration: %s", automatedProcessingConfiguration, err)
 	}
-
 	// Process dataset metadata.
 	describeDataset(t, body)
-
 	for _, file := range body.ObjectFile {
 		// Add checksum metadata. We're not going to verify checksums at this
 		// point because this is something meant to do by Archivematica.
@@ -103,7 +154,6 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 				t.ChecksumSHA256(file.FileName, c.ChecksumValue)
 			}
 		}
-
 		// Download and describe each file.
 		// Using an anonymous function so I can use defer inside this loop.
 		func() {
@@ -119,7 +169,6 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 			}
 			describeFile(t, file.FileName, &file)
 		}()
-
 		// Just a single error is enough for us to halt the transfer completely.
 		if err == nil {
 			continue
@@ -129,16 +178,9 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 				c.logger.Warningf("Error destroying transfer: %v", err)
 			}
 		}()
-		return err
+		return "", err
 	}
-
-	id, err := t.Start()
-	if err != nil {
-		return err
-	}
-	c.logger.Debugf("The transfer has started successfully, id: %s", id)
-
-	return nil
+	return t.Start()
 }
 
 // retry is a retry-backoff time provider that manages times between retries for the http storage type.
@@ -212,7 +254,7 @@ func downloadFileHTTP(ctx context.Context, httpClient *http.Client, target io.Wr
 // No need to assign the identifierType now as the XSD has a fixed value of "DOI"
 // If this gets more types in future it can be added in the ObjectIdentifier loop with
 //  t.Describe("identifierType", item.IdentifierType)
-func describeDataset(t *amclient.TransferSession, f *message.MetadataCreateRequest) {
+func describeDataset(t *amclient.TransferSession, f *message.ResearchObject) {
 	t.Describe("dc.title", f.ObjectTitle)
 	t.Describe("dc.type", f.ObjectResourceType.String())
 

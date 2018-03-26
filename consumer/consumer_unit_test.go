@@ -37,6 +37,7 @@ func Test_handleMetadataCreateRequest_errMessageType(t *testing.T) {
 func Test_handleMetadataCreateRequest_emptyFiles(t *testing.T) {
 	c, _ := getConsumer(t)
 	msg := message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+	msg.MessageBody.(*message.MetadataCreateRequest).ObjectUuid = message.MustUUID("a3c982c9-e035-4702-bd97-cef8ab618ad5")
 	if err := c.handleMetadataCreateRequest(msg); err != nil {
 		t.Fatalf("Expected nil error, got %s", err)
 	}
@@ -59,28 +60,26 @@ func Test_describeDataset(t *testing.T) {
 			},
 		}
 	)
-	describeDataset(ts, &message.MetadataCreateRequest{
-		ResearchObject: message.ResearchObject{
-			ObjectTitle:        "Title",
-			ObjectResourceType: message.ResourceTypeEnum_audio,
-			ObjectIdentifier: []message.Identifier{
-				message.Identifier{IdentifierValue: "I1"},
-				message.Identifier{IdentifierValue: "I2"},
+	describeDataset(ts, &message.ResearchObject{
+		ObjectTitle:        "Title",
+		ObjectResourceType: message.ResourceTypeEnum_audio,
+		ObjectIdentifier: []message.Identifier{
+			message.Identifier{IdentifierValue: "I1"},
+			message.Identifier{IdentifierValue: "I2"},
+		},
+		ObjectDate: []message.Date{
+			message.Date{DateType: message.DateTypeEnum_published, DateValue: "date of publication"},
+			message.Date{DateType: message.DateTypeEnum_accepted, DateValue: "date of ..."},
+		},
+		ObjectOrganisationRole: []message.OrganisationRole{
+			message.OrganisationRole{
+				Organisation: &message.Organisation{OrganisationName: "orgname"},
 			},
-			ObjectDate: []message.Date{
-				message.Date{DateType: message.DateTypeEnum_published, DateValue: "date of publication"},
-				message.Date{DateType: message.DateTypeEnum_accepted, DateValue: "date of ..."},
-			},
-			ObjectOrganisationRole: []message.OrganisationRole{
-				message.OrganisationRole{
-					Organisation: &message.Organisation{OrganisationName: "orgname"},
-				},
-			},
-			ObjectPersonRole: []message.PersonRole{
-				message.PersonRole{Role: message.PersonRoleEnum_relatedPerson, Person: &message.Person{PersonGivenName: "person 1"}},
-				message.PersonRole{Role: message.PersonRoleEnum_dataCreator, Person: &message.Person{PersonGivenName: "person 2"}},
-				message.PersonRole{Role: message.PersonRoleEnum_publisher, Person: &message.Person{PersonGivenName: "person 3"}},
-			},
+		},
+		ObjectPersonRole: []message.PersonRole{
+			message.PersonRole{Role: message.PersonRoleEnum_relatedPerson, Person: &message.Person{PersonGivenName: "person 1"}},
+			message.PersonRole{Role: message.PersonRoleEnum_dataCreator, Person: &message.Person{PersonGivenName: "person 2"}},
+			message.PersonRole{Role: message.PersonRoleEnum_publisher, Person: &message.Person{PersonGivenName: "person 3"}},
 		},
 	})
 	entries := ts.Metadata.Entries()
@@ -220,8 +219,9 @@ func getFile(t *testing.T, name string) (afero.Afero, afero.File) {
 func getConsumer(t *testing.T) (*ConsumerImpl, *logt.Hook) {
 	logger, hook := logt.NewNullLogger()
 	c := &ConsumerImpl{
-		ctx:    context.Background(),
-		logger: logger,
+		ctx:     context.Background(),
+		logger:  logger,
+		storage: newStorageInMemory(),
 	}
 	return c, hook
 }
