@@ -38,7 +38,7 @@ type ConsumerImpl struct {
 
 	// storage supports the persistency of certain data attributes that we
 	// need to access to implement a RDSS preservation system.
-	storage storage
+	storage Storage
 }
 
 // MakeConsumer returns a new ConsumerImpl which implements Consumer
@@ -48,7 +48,8 @@ func MakeConsumer(
 	broker *broker.Broker,
 	amc *amclient.Client,
 	s3 s3.ObjectStorage,
-	amSharedFs afero.Fs) *ConsumerImpl {
+	amSharedFs afero.Fs,
+	storage Storage) *ConsumerImpl {
 	return &ConsumerImpl{
 		ctx:        ctx,
 		logger:     logger,
@@ -56,7 +57,7 @@ func MakeConsumer(
 		amc:        amc,
 		s3:         s3,
 		amSharedFs: amSharedFs,
-		storage:    newStorageInMemory(),
+		storage:    storage,
 	}
 }
 

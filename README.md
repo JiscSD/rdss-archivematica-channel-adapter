@@ -111,6 +111,36 @@ AWS Region. If empty, the AWS SDK will throw an error. E.g.: `eu-west-2`.
 
 Location of the Archivematica Shared Directory.
 
+:heavy_minus_sign: `CONSUMER.BACKEND`
+
+> Default: `"builtin"`
+
+The default (`"builtin"`) is a simple non-persisted hash in memory. A better alternative that can be shared by multiple consumers is the `dynamodb` backend which uses a single DynamoDB table.
+
+:heavy_minus_sign: `CONSUMER.DYNAMODB_TLS`
+
+> Default: `true`
+
+When set to `true`, the client uses the TLS protocol to communicate securely with the server. If you are using a clone of DynamoDB like dynalite you may prefer to have it disabled.
+
+:heavy_minus_sign: `CONSUMER.DYNAMODB_TABLE`
+
+> Default: `""`
+
+The DynamoDB table name which must conform the [naming rules](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.NamingRules).
+
+:heavy_minus_sign: `CONSUMER.DYNAMODB_ENDPOINT`
+
+> Default: `""`
+
+When set to a non-empty string, it's used as the AWS service endpoint, e.g.: `"http://127.0.0.1:9999"`.
+
+:heavy_minus_sign: `CONSUMER.DYNAMODB_REGION`
+
+> Default: `""`
+
+AWS Region. If empty, the AWS SDK will throw an error. E.g.: `eu-west-2`.
+
 :heavy_minus_sign: `PUBLISHER.LISTEN`
 
 > Default: `"0.0.0.0:8000"`

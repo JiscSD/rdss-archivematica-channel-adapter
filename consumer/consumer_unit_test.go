@@ -221,7 +221,7 @@ func getConsumer(t *testing.T) (*ConsumerImpl, *logt.Hook) {
 	c := &ConsumerImpl{
 		ctx:     context.Background(),
 		logger:  logger,
-		storage: newStorageInMemory(),
+		storage: NewStorageInMemory(),
 	}
 	return c, hook
 }

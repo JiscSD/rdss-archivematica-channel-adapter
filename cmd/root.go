@@ -35,6 +35,11 @@ region = ""
 
 [consumer]
 archivematica_shared_dir = "/var/archivematica/sharedDirectory"
+backend = "builtin"
+dynamodb_tls = true
+dynamodb_table = "consumer_storage"
+dynamodb_endpoint = ""
+dynamodb_region = ""
 
 [publisher]
 listen = "0.0.0.0:8000"

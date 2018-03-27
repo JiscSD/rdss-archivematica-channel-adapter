@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	logt "github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
 
@@ -77,18 +78,19 @@ func tearUp() {
 
 	// Consumer with mocks
 	c = consumer.MakeConsumer(
-		ctx,
-		logger,
-		br,
-		amc,
-		&RandomObjectStorage{},
-		fs)
+		ctx, logger,
+		br, amc, &RandomObjectStorage{}, fs,
+		consumer.NewStorageInMemory())
 
 	go func() {
 		c.Start()
 		stop <- struct{}{}
 		cancel() // just to make vet happy
 	}()
+}
+
+type dynamodbmock struct {
+	dynamodbiface.DynamoDBAPI
 }
 
 func tearDown() {

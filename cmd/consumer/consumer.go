@@ -7,6 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -67,7 +70,11 @@ func start() {
 
 	quit := make(chan struct{})
 	go func() {
-		c := consumer.MakeConsumer(ctx, logger, br, createAmClient(), s3Client, amSharedFs)
+		c := consumer.MakeConsumer(
+			ctx, logger,
+			br, createAmClient(), s3Client, amSharedFs,
+			createConsumerStorage(),
+		)
 		c.Start()
 
 		quit <- struct{}{}
@@ -152,4 +159,32 @@ func createS3Client() (s3.ObjectStorage, error) {
 		opts = append(opts, s3.SetRegion(region))
 	}
 	return s3.New(opts...)
+}
+
+func createConsumerStorage() consumer.Storage {
+	var (
+		backend  = viper.GetString("consumer.backend")
+		endpoint = viper.GetString("consumer.dynamodb_endpoint")
+		region   = viper.GetString("consumer.dynamodb_region")
+		table    = viper.GetString("consumer.dynamodb_table")
+		tls      = viper.GetBool("consumer.dynamodb_tls")
+	)
+	if backend == "builtin" {
+		return consumer.NewStorageInMemory()
+	}
+	if backend == "dynamodb" {
+		config := aws.NewConfig()
+		if region != "" {
+			config = config.WithRegion(region)
+		}
+		if endpoint != "" {
+			config = config.WithEndpoint(endpoint)
+		}
+		config.DisableSSL = aws.Bool(!tls)
+		return consumer.NewStorageDynamoDB(
+			dynamodb.New(session.Must(session.NewSession(config))),
+			table,
+		)
+	}
+	panic("unknown consumer.backend")
 }
