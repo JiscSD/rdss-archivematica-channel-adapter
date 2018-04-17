@@ -243,7 +243,8 @@ func (f EmailFormatChecker) IsFormat(input interface{}) bool {
 	if asString == addressUsedInSpecExamples {
 		return true
 	}
-	return gojsonschema.FormatCheckers.IsFormat("email", asString)
+	emailFC := &gojsonschema.EmailFormatChecker{}
+	return emailFC.IsFormat(asString)
 }
 
 // See https://github.com/JiscRDSS/rdss-message-api-specification/commit/81af7c27c4adb10bba05ced436347789e67d6a14.
