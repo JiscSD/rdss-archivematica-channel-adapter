@@ -73,13 +73,13 @@ func Test_describeDataset(t *testing.T) {
 		},
 		ObjectOrganisationRole: []message.OrganisationRole{
 			message.OrganisationRole{
-				Organisation: &message.Organisation{OrganisationName: "orgname"},
+				Organisation: message.Organisation{OrganisationName: "orgname"},
 			},
 		},
 		ObjectPersonRole: []message.PersonRole{
-			message.PersonRole{Role: message.PersonRoleEnum_relatedPerson, Person: &message.Person{PersonGivenName: "person 1"}},
-			message.PersonRole{Role: message.PersonRoleEnum_dataCreator, Person: &message.Person{PersonGivenName: "person 2"}},
-			message.PersonRole{Role: message.PersonRoleEnum_publisher, Person: &message.Person{PersonGivenName: "person 3"}},
+			message.PersonRole{Role: message.PersonRoleEnum_relatedPerson, Person: message.Person{PersonGivenNames: "person 1"}},
+			message.PersonRole{Role: message.PersonRoleEnum_dataCreator, Person: message.Person{PersonGivenNames: "person 2"}},
+			message.PersonRole{Role: message.PersonRoleEnum_publisher, Person: message.Person{PersonGivenNames: "person 3"}},
 		},
 	})
 	entries := ts.Metadata.Entries()

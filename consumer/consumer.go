@@ -100,7 +100,7 @@ func (c *ConsumerImpl) handleMetadataUpdateRequest(msg *message.Message) error {
 		return err
 	}
 	// Determine if the message is pointing to a previous dataset.
-	var match *message.Identifier
+	var match *message.IdentifierRelationship
 	for _, item := range body.ObjectRelatedIdentifier {
 		if item.RelationType != message.RelationTypeEnum_isNewVersionOf {
 			continue
@@ -108,14 +108,14 @@ func (c *ConsumerImpl) handleMetadataUpdateRequest(msg *message.Message) error {
 		match = &item
 		break // If there's more than one match we're not going to care.
 	}
-	if match == nil || match.IdentifierValue == "" {
+	if match == nil || match.Identifier.IdentifierValue == "" {
 		logger.Debug("Ignoring message.")
 		return nil // Stop here, ignore message.
 	}
 	// Determine match.IdentifierValue's (ObjectUUID) is a known dataset.
-	transferID, err := c.storage.GetResearchObject(c.ctx, match.IdentifierValue)
+	transferID, err := c.storage.GetResearchObject(c.ctx, match.Identifier.IdentifierValue)
 	if err != nil {
-		logger.WithFields(log.Fields{"err": err, "IdentifierValue": match.IdentifierValue}).Warn("Cannot fetch or find associated object in the local store.")
+		logger.WithFields(log.Fields{"err": err, "IdentifierValue": match.Identifier.IdentifierValue}).Warn("Cannot fetch or find associated object in the local store.")
 		return nil
 	}
 	// At this point we know the previous transferID so we could reingest.
@@ -279,10 +279,10 @@ func describeDataset(t *amclient.TransferSession, f *message.ResearchObject) {
 
 	for _, item := range f.ObjectPersonRole {
 		if item.Role == message.PersonRoleEnum_dataCreator {
-			t.Describe("dc.creatorName", item.Person.PersonGivenName)
+			t.Describe("dc.creatorName", item.Person.PersonGivenNames)
 		}
 		if item.Role == message.PersonRoleEnum_publisher {
-			t.Describe("dc.publisher", item.Person.PersonGivenName)
+			t.Describe("dc.publisher", item.Person.PersonGivenNames)
 		}
 	}
 }

@@ -87,8 +87,8 @@ func Test_resolveSchemaRef(t *testing.T) {
 			"schemas/intellectual_asset.json",
 		},
 		{
-			"https://www.jisc.ac.uk/rdss/schema/messages/header/header_schema.json",
-			"messages/header/header_schema.json",
+			"https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/create/request_schema.json",
+			"messages/body/metadata/create/request_schema.json",
 		},
 	}
 	for _, tt := range tests {

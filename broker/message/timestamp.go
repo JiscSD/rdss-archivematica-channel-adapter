@@ -1,6 +1,7 @@
 package message
 
 import (
+	"strings"
 	"time"
 )
 
@@ -13,7 +14,21 @@ func (t Timestamp) MarshalJSON() ([]byte, error) {
 	if ts.IsZero() {
 		return []byte("null"), nil
 	}
-	return time.Time(t).MarshalJSON()
+	bytes, err := time.Time(t).MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	// This is here so we return `2004-08-01T10:00:00-00:00` instead of
+	// `2004-08-01T10:00:00Z` just so we match the way they are represented in
+	// the examples of the API repo.
+	str := string(bytes)
+	const suffix = "Z\""
+	if strings.HasSuffix(str, suffix) {
+		str = str[0:len(str)-len(suffix)] + "-00:00\""
+	}
+
+	return []byte(str), nil
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.

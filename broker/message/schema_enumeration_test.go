@@ -61,28 +61,6 @@ func TestDateTypeEnum_String(t *testing.T) {
 	}
 }
 
-func TestEduPersonScopedAffiliationEnum_String(t *testing.T) {
-	tests := []struct {
-		t    EduPersonScopedAffiliationEnum
-		want string
-	}{
-		{EduPersonScopedAffiliationEnum_student, "student"},
-		{EduPersonScopedAffiliationEnum_staff, "staff"},
-		{EduPersonScopedAffiliationEnum_faculty, "faculty"},
-		{EduPersonScopedAffiliationEnum_employee, "employee"},
-		{EduPersonScopedAffiliationEnum_member, "member"},
-		{EduPersonScopedAffiliationEnum_affiliate, "affiliate"},
-		{EduPersonScopedAffiliationEnum_alum, "alum"},
-		{EduPersonScopedAffiliationEnum_libraryWalkIn, "libraryWalkIn"},
-		{0, ""},
-	}
-	for _, tt := range tests {
-		if got := tt.t.String(); got != tt.want {
-			t.Errorf("EduPersonScopedAffiliationEnum.String() = %v, want %v", got, tt.want)
-		}
-	}
-}
-
 func TestFileUseEnum_String(t *testing.T) {
 	tests := []struct {
 		t    FileUseEnum
@@ -212,10 +190,7 @@ func TestPersonIdentifierTypeEnum_String(t *testing.T) {
 		want string
 	}{
 		{PersonIdentifierTypeEnum_ORCID, "ORCID"},
-		{PersonIdentifierTypeEnum_FOAF, "FOAF"},
-		{PersonIdentifierTypeEnum_Twitter, "Twitter"},
-		{PersonIdentifierTypeEnum_eduPersonTargetedID, "eduPersonTargetedID"},
-		{PersonIdentifierTypeEnum_eduPersonPrincipleName, "eduPersonPrincipleName"},
+		{PersonIdentifierTypeEnum_researcherId, "researcherId"},
 		{0, ""},
 	}
 	for _, tt := range tests {

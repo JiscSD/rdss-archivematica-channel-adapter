@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -16,325 +15,217 @@ import (
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message/specdata"
 )
 
-const (
-	metadataCreateRequest = `{
-  "messageHeader": {
-    "messageId": "4e5bef43-21b1-4ef4-b850-dbae05b4882d",
-    "messageClass": "Command",
-    "messageType": "MetadataCreate",
-    "messageTimings": {
-      "publishedTimestamp": null,
-      "expirationTimestamp": null
-    },
-    "messageSequence": {
-      "sequence": "6ad8194d-d1d0-4389-a64d-c73d761463c9",
-      "position": 0,
-      "total": 0
-    },
-    "messageHistory": [
-      {
-        "machineId": "foo",
-        "machineAddress": "bar",
-        "timestamp": "1997-07-16T19:20:00+01:00"
-      }
-    ],
-    "version": "2.1.0",
-    "generator": "Test"
-  },
-  "messageBody": {
-    "objectUuid": "be8eff14-a92b-429e-80b8-0ec4594d72c0",
-    "objectTitle": "Non-uniform Mesh for Embroidered Microstrip Antennas - Simulation files",
-    "objectPersonRole": [
-      {
-        "person": {
-          "personUuid": "8468f86b-a936-41b3-a8a7-ef37e3008ba8",
-          "personIdentifier": null,
-          "personEntitlement": null,
-          "personAffiliation": null,
-          "personGivenName": "Zhang, Shiyu",
-          "personCn": "",
-          "personSn": "",
-          "personTelephoneNumber": "",
-          "personMail": "",
-          "personOrganisationUnit": {
-            "organisationUnitUuid": null,
-            "organisationUnitName": "",
-            "organisation": {
-              "organisationJiscId": 0,
-              "organisationName": "",
-              "organisationType": 0,
-              "organisationAddress": ""
-            }
-          }
-        },
-        "role": 5
-      }
-    ],
-    "objectDescription": "The fileset contains simulation files of the non-uniform meshed patch antennas (using FDTD Empire XCcel). The conductor thickness and conductivity can be adjusted according to the conductive threads.",
-    "objectRights": null,
-    "objectDate": [
-      {
-        "dateValue": "2017-03-17",
-        "dateType": 10
-      }
-    ],
-    "objectResourceType": 7,
-    "objectValue": 0,
-    "objectIdentifier": [
-      {
-        "identifierValue": "10.17028/rd.lboro.4665448.v1",
-        "identifierType": 4,
-        "relationType": 8
-      }
-    ],
-    "objectOrganisationRole": null,
-    "objectFile": [
-      {
-        "fileUuid": "f8351e4f-66cc-4434-b0f1-54e7038c031a",
-        "fileIdentifier": "1",
-        "fileName": "woodpigeon-pic.jpg",
-        "fileSize": 147004,
-        "fileDateCreated": {
-          "dateValue": "",
-          "dateType": 0
-        },
-        "fileRights": {
-          "rightsStatement": null,
-          "rightsHolder": null,
-          "licence": null,
-          "access": null
-        },
-        "fileChecksum": [
-          {
-            "checksumType": 1,
-            "checksumValue": "53a64110e067b14394c142c09571bea0"
-          }
-        ],
-        "fileCompositionLevel": "",
-        "fileDateModified": null,
-        "fileUse": 0,
-        "filePreservationEvent": null,
-        "fileUploadStatus": 0,
-        "fileStorageStatus": 0,
-        "fileLastDownloaded": {
-          "dateValue": "",
-          "dateType": 0
-        },
-        "fileStorageLocation": "s3://rdss-prod-figshare-0132/woodpigeon-pic.jpg",
-        "fileStoragePlatform": {
-          "storagePlatformUuid": "f2939501-2b2d-4e5c-9197-0daa57ccb621",
-          "storagePlatformName": "string",
-          "storagePlatformType": 1,
-          "storagePlatformCost": "string"
-        }
-      },
-      {
-        "fileUuid": "c23d70ee-cc6b-4698-8d4c-9dcaefb40672",
-        "fileIdentifier": "2",
-        "fileName": "bird-sounds.mp3",
-        "fileSize": 910616,
-        "fileDateCreated": {
-          "dateValue": "",
-          "dateType": 0
-        },
-        "fileRights": {
-          "rightsStatement": null,
-          "rightsHolder": null,
-          "licence": null,
-          "access": null
-        },
-        "fileChecksum": [
-          {
-            "checksumType": 1,
-            "checksumValue": "92c8ab01cecceb3bf0789c2cd8c7415a"
-          }
-        ],
-        "fileCompositionLevel": "",
-        "fileDateModified": null,
-        "fileUse": 0,
-        "filePreservationEvent": null,
-        "fileUploadStatus": 0,
-        "fileStorageStatus": 0,
-        "fileLastDownloaded": {
-          "dateValue": "",
-          "dateType": 0
-        },
-        "fileStorageLocation": "s3://rdss-prod-figshare-0132/bird-sounds.mp3",
-        "fileStoragePlatform": {
-          "storagePlatformUuid": "f2939501-2b2d-4e5c-9197-0daa57ccb621",
-          "storagePlatformName": "string",
-          "storagePlatformType": 1,
-          "storagePlatformCost": "string"
-        }
-      }
-    ]
-  }
-}`
-)
-
-func TestMessage_FromJSON(t *testing.T) {
-	testCases := []struct {
-		data    []byte       // Message
-		et      MessageType  // Expected message type
-		ec      MessageClass // Expected message class
-		ebt     string       // Expected underlying type of body
-		wantErr bool
-	}{
-		{[]byte(metadataCreateRequest), MessageTypeMetadataCreate, MessageClassCommand, "*message.MetadataCreateRequest", false},
-		{[]byte(`{"messageHeader": {"messageID": 12345}, "messageBody": {}}`), -1, -1, "", true},
-	}
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%s_%s", tc.et, tc.ec), func(t *testing.T) {
-			msg := &Message{}
-			err := json.Unmarshal(tc.data, msg)
-			if tc.wantErr {
-				if err == nil {
-					t.Fatalf("json.Unmarshal() did not return an error but one was expected")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("error unmarshalling the message: %s", err)
-			}
-			if msg.MessageHeader.MessageType != tc.et {
-				t.Errorf("expected=%s received=%s", tc.et, msg.MessageHeader.MessageType)
-			}
-			if msg.MessageHeader.MessageClass != tc.ec {
-				t.Errorf("expected=%s received=%s", tc.ec, msg.MessageHeader.MessageClass)
-			}
-			it := reflect.TypeOf(msg.MessageBody).String()
-			if it != tc.ebt {
-				t.Errorf("expected=%s received=%s", it, tc.ebt)
-			}
-		})
-	}
-}
-
+// Test if we can recreate `message.json` from Go and test if the result is the
+// same byte to byte. `message.json` is a full message (including headers) that
+// we can find in the API repository.
 func TestMessage_ToJSON(t *testing.T) {
-	testCases := []struct {
-		data    []byte   // Expected JSON-encoded message
-		message *Message // The message we're encoding
-		wantErr bool
-	}{
-		{
-			[]byte(metadataCreateRequest),
-			&Message{
-				MessageHeader: MessageHeader{
-					ID:           MustUUID("4e5bef43-21b1-4ef4-b850-dbae05b4882d"),
-					MessageClass: MessageClassCommand,
-					MessageType:  MessageTypeMetadataCreate,
-					MessageHistory: []MessageHistory{
-						MessageHistory{
-							MachineId:      "foo",
-							MachineAddress: "bar",
-							Timestamp:      Timestamp(time.Date(1997, time.July, 16, 19, 20, 0, 0, time.FixedZone("+0100", 3600))),
-						},
-					},
-					MessageSequence: MessageSequence{
-						Sequence: MustUUID("6ad8194d-d1d0-4389-a64d-c73d761463c9"),
-						Position: 0,
-						Total:    0,
-					},
-					Version:   Version,
-					Generator: "Test",
+
+	// Load fixture.
+	fixture := specdata.MustAsset("messages/message.json")
+
+	// Our message.
+	message := &Message{
+		MessageHeader: MessageHeader{
+			ID:            MustUUID("efac164a-c9bd-45e0-8991-1c505e4f45c2"),
+			CorrelationID: "4501437a-ce95-4372-be5c-277cb6a826eb",
+			MessageClass:  MessageClassCommand,
+			MessageType:   MessageTypeMetadataCreate,
+			ReturnAddress: "string",
+			MessageTimings: MessageTimings{
+				PublishedTimestamp:  Timestamp(time.Date(2004, time.August, 1, 10, 0, 0, 0, time.UTC)),
+				ExpirationTimestamp: Timestamp(time.Date(2004, time.August, 1, 10, 0, 0, 0, time.UTC)),
+			},
+			MessageSequence: MessageSequence{
+				Sequence: MustUUID("6ad8194d-d1d0-4389-a64d-c73d761463c9"),
+				Position: 1,
+				Total:    1,
+			},
+			MessageHistory: []MessageHistory{
+				MessageHistory{
+					MachineId:      "string",
+					MachineAddress: "machine.example.com",
+					Timestamp:      Timestamp(time.Date(2004, time.August, 1, 10, 0, 0, 0, time.UTC)),
 				},
-				MessageBody: &MetadataCreateRequest{
-					ResearchObject{
-						ObjectUuid:  MustUUID("be8eff14-a92b-429e-80b8-0ec4594d72c0"),
-						ObjectTitle: "Non-uniform Mesh for Embroidered Microstrip Antennas - Simulation files",
-						ObjectPersonRole: []PersonRole{
-							{
-								Person: &Person{
-									PersonUuid:      MustUUID("8468f86b-a936-41b3-a8a7-ef37e3008ba8"),
-									PersonGivenName: "Zhang, Shiyu",
+			},
+			Version:          "1.2.3",
+			ErrorCode:        "GENERR001",
+			ErrorDescription: "string",
+			Generator:        "string",
+		},
+		MessageBody: &MetadataCreateRequest{
+			ResearchObject{
+				ObjectUuid:  MustUUID("5680e8e0-28a5-4b20-948e-fd0d08781e0b"),
+				ObjectTitle: "string",
+				ObjectPersonRole: []PersonRole{
+					PersonRole{
+						Person: Person{
+							PersonUuid: MustUUID("27811a4c-9cb5-4e6d-a069-5c19288fae58"),
+							PersonIdentifier: []PersonIdentifier{
+								PersonIdentifier{
+									PersonIdentifierValue: "string",
+									PersonIdentifierType:  PersonIdentifierTypeEnum_ORCID,
 								},
-								Role: PersonRoleEnum_dataCreator,
+							},
+							PersonHonorificPrefix: "string",
+							PersonGivenNames:      "string",
+							PersonFamilyNames:     "string",
+							PersonHonorificSuffix: "string",
+							PersonMail:            "person@net",
+							PersonOrganisationUnit: OrganisationUnit{
+								OrganisationUnitUuid: MustUUID("28be7f16-0e70-461f-a2db-d9d7c64a8f17"),
+								OrganisationUuidName: "string",
+								Organisation: Organisation{
+									OrganisationJiscId:  1,
+									OrganisationName:    "string",
+									OrganisationType:    OrganisationTypeEnum_charity,
+									OrganisationAddress: "string",
+								},
 							},
 						},
-						ObjectDescription: "The fileset contains simulation files of the non-uniform meshed patch antennas (using FDTD Empire XCcel). The conductor thickness and conductivity can be adjusted according to the conductive threads.",
-						ObjectDate: []Date{
-							{
-								DateType:  10,
-								DateValue: "2017-03-17",
+						Role: PersonRoleEnum_administrator,
+					},
+				},
+				ObjectDescription: "string",
+				ObjectRights: Rights{
+					RightsStatement: []string{"string"},
+					RightsHolder:    []string{"string"},
+					Licence: []Licence{
+						Licence{
+							LicenceName:       "string",
+							LicenceIdentifier: "string",
+							LicenseStartDate:  Timestamp(time.Date(2018, time.January, 1, 0, 0, 0, 0, time.UTC)),
+							LicenseEndDate:    Timestamp(time.Date(2018, time.December, 31, 23, 59, 59, 0, time.UTC)),
+						},
+					},
+					Access: []Access{
+						Access{
+							AccessType:      AccessTypeEnum_open,
+							AccessStatement: "string",
+						},
+					},
+				},
+				ObjectDate: []Date{
+					Date{
+						DateValue: "2002-10-02T10:00:00-05:00",
+						DateType:  DateTypeEnum_accepted,
+					},
+				},
+				ObjectKeywords:     []string{"string"},
+				ObjectCategory:     []string{"string"},
+				ObjectResourceType: ResourceTypeEnum_artDesignItem,
+				ObjectValue:        ObjectValueEnum_normal,
+				ObjectIdentifier: []Identifier{
+					Identifier{
+						IdentifierValue: "string",
+						IdentifierType:  1,
+					},
+				},
+				ObjectRelatedIdentifier: []IdentifierRelationship{
+					IdentifierRelationship{
+						Identifier: Identifier{
+							IdentifierValue: "string",
+							IdentifierType:  IdentifierTypeEnum_ARK,
+						},
+						RelationType: RelationTypeEnum_cites,
+					},
+				},
+				ObjectOrganisationRole: []OrganisationRole{
+					OrganisationRole{
+						Organisation: Organisation{
+							OrganisationJiscId:  1,
+							OrganisationName:    "string",
+							OrganisationType:    OrganisationTypeEnum_charity,
+							OrganisationAddress: "string",
+						},
+						Role: OrganisationRoleEnum_funder,
+					},
+				},
+				ObjectPreservationEvent: []PreservationEvent{
+					PreservationEvent{
+						PreservationEventValue:  "string",
+						PreservationEventType:   PreservationEventTypeEnum_capture,
+						PreservationEventDetail: "string",
+					},
+				},
+				ObjectFile: []File{
+					File{
+						FileUUID:        MustUUID("e150c4ab-0370-4e5a-8722-7fb3369b7017"),
+						FileIdentifier:  "string",
+						FileName:        "string",
+						FileSize:        1,
+						FileLabel:       "string",
+						FileDateCreated: Timestamp(time.Date(2002, time.October, 2, 10, 0, 0, 0, time.FixedZone("", -18000))),
+						FileRights: Rights{
+							RightsStatement: []string{"string"},
+							RightsHolder:    []string{"string"},
+							Licence: []Licence{
+								Licence{
+									LicenceName:       "string",
+									LicenceIdentifier: "string",
+									LicenseStartDate:  Timestamp(time.Date(2018, time.January, 1, 0, 0, 0, 0, time.UTC)),
+									LicenseEndDate:    Timestamp(time.Date(2018, time.December, 31, 23, 59, 59, 0, time.UTC)),
+								},
+							},
+							Access: []Access{
+								Access{
+									AccessType:      AccessTypeEnum_open,
+									AccessStatement: "string",
+								},
 							},
 						},
-						ObjectResourceType: 7,
-						ObjectIdentifier: []Identifier{
-							{
-								IdentifierValue: "10.17028/rd.lboro.4665448.v1",
-								IdentifierType:  4,
-								RelationType:    8,
+						FileChecksum: []Checksum{
+							Checksum{
+								ChecksumUuid:  MustUUID("df23b46b-6b64-4a40-842f-5ad363bb6e11"),
+								ChecksumType:  ChecksumTypeEnum_md5,
+								ChecksumValue: "string",
 							},
 						},
-						ObjectFile: []File{
-							{
-								FileUUID:       MustUUID("f8351e4f-66cc-4434-b0f1-54e7038c031a"),
-								FileIdentifier: "1",
-								FileName:       "woodpigeon-pic.jpg",
-								FileSize:       147004,
-								FileChecksum: []Checksum{
-									{
-										ChecksumType:  1,
-										ChecksumValue: "53a64110e067b14394c142c09571bea0",
-									},
-								},
-								FileStorageLocation: "s3://rdss-prod-figshare-0132/woodpigeon-pic.jpg",
-								FileStoragePlatform: FileStoragePlatform{
-									StoragePlatformUuid: MustUUID("f2939501-2b2d-4e5c-9197-0daa57ccb621"),
-									StoragePlatformName: "string",
-									StoragePlatformType: 1,
-									StoragePlatformCost: "string",
-								},
+						FileFormatType:       "string",
+						FileCompositionLevel: "string",
+						FileHasMimeType:      true,
+						FileDateModified: []Timestamp{
+							Timestamp(time.Date(2002, time.October, 2, 10, 0, 0, 0, time.FixedZone("", -18000))),
+						},
+						FilePuid: []string{"string"},
+						FileUse:  FileUseEnum_originalFile,
+						FilePreservationEvent: []PreservationEvent{
+							PreservationEvent{
+								PreservationEventValue:  "string",
+								PreservationEventType:   PreservationEventTypeEnum_capture,
+								PreservationEventDetail: "string",
 							},
-							{
-								FileUUID:       MustUUID("c23d70ee-cc6b-4698-8d4c-9dcaefb40672"),
-								FileIdentifier: "2",
-								FileName:       "bird-sounds.mp3",
-								FileSize:       910616,
-								FileChecksum: []Checksum{
-									{
-										ChecksumType:  1,
-										ChecksumValue: "92c8ab01cecceb3bf0789c2cd8c7415a",
-									},
-								},
-								FileStorageLocation: "s3://rdss-prod-figshare-0132/bird-sounds.mp3",
-								FileStoragePlatform: FileStoragePlatform{
-									StoragePlatformUuid: MustUUID("f2939501-2b2d-4e5c-9197-0daa57ccb621"),
-									StoragePlatformName: "string",
-									StoragePlatformType: 1,
-									StoragePlatformCost: "string",
-								},
-							},
+						},
+						FileUploadStatus:        UploadStatusEnum_uploadStarted,
+						FileStorageStatus:       StorageStatusEnum_online,
+						FileLastDownload:        Timestamp(time.Date(2002, time.October, 2, 10, 0, 0, 0, time.FixedZone("", -18000))),
+						FileTechnicalAttributes: []string{"string"},
+						FileStorageLocation:     "https://tools.ietf.org/html/rfc3986",
+						FileStoragePlatform: FileStoragePlatform{
+							StoragePlatformUuid: MustUUID("f2939501-2b2d-4e5c-9197-0daa57ccb621"),
+							StoragePlatformName: "string",
+							StoragePlatformType: StorageTypeEnum_S3,
+							StoragePlatformCost: "string",
 						},
 					},
 				},
 			},
-			false,
 		},
-		{nil, &Message{MessageBody: make(chan int)}, true},
 	}
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%s_%s", tc.message.MessageHeader.MessageType, tc.message.MessageHeader.MessageClass), func(t *testing.T) {
-			// Encode it and indent it
-			data, err := json.Marshal(tc.message)
-			if tc.wantErr {
-				if err == nil {
-					t.Error("json.Marshal() did not return an error but one was expected")
-				}
-				return
-			}
-			if err != nil {
-				t.Errorf("ToJSON failed %s", err)
-			}
-			var out bytes.Buffer
-			json.Indent(&out, data, "", "  ")
 
-			// Compare them
-			have := out.Bytes()
-			if !bytes.Equal(have, tc.data) {
-				t.Errorf("Unexpected result:\nHAVE: `%s`\nEXPECTED: `%s`", have, tc.data)
-			}
-		})
+	// Encode our message.
+	data, err := json.Marshal(message)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Indent the document and append the line break.
+	var out bytes.Buffer
+	json.Indent(&out, data, "", "  ")
+	have := out.Bytes()
+	have = append(have, byte('\n'))
+
+	if !bytes.Equal(have, fixture) {
+		t.Errorf("Unexpected result:\nHAVE: `%s`\nEXPECTED: `%s`", have, fixture)
 	}
 }
 
@@ -497,9 +388,9 @@ func TestMessage_OtherFixtures_Header(t *testing.T) {
 	header := specdata.MustAsset("messages/header/header.json")
 	body := specdata.MustAsset("messages/body/metadata/create/request.json")
 	blob := []byte(`{
-		"messageHeader": ` + string(header) + `,
-		"messageBody": ` + string(body) + `
-	}`)
+    "messageHeader": ` + string(header) + `,
+    "messageBody": ` + string(body) + `
+  }`)
 	msg := &Message{}
 	if err := json.Unmarshal(blob, msg); err != nil {
 		t.Fatal(err)

@@ -44,6 +44,7 @@ const (
 	APPERRMET001 // Received a Metadata UPDATE with a datasetUuid that does not exist.
 	APPERRMET002 // Received a Metadata DELETE with a datasetUuid that does not exist.
 	APPERRMET003 // Received a Metadata READ with a datasetUuid that does not exist.
+	APPERRMET004 // Received an invalid checksum for a file provided within the payload.
 
 	// Vocabulary Error Codes
 	APPERRVOC002 // Received a Vocabulary READ with a vocabularyId that does not exist.
@@ -79,6 +80,8 @@ func (k Kind) String() (ret string) {
 		ret = "APPERRMET002"
 	case APPERRMET003:
 		ret = "APPERRMET003"
+	case APPERRMET004:
+		ret = "APPERRMET004"
 
 	case APPERRVOC002:
 		ret = "APPERRVOC002"

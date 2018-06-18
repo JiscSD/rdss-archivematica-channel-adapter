@@ -75,15 +75,17 @@ func rdssSchemaDocFinder(source string) ([]byte, error) {
 
 // resolveSchemaRef knows the path of the schema assets in the specdata pkg.
 func resolveSchemaRef(source string) string {
-	// See https://github.com/JiscRDSS/rdss-message-api-specification/issues/99.
-	if source == "https://www.jisc.ac.uk/rdss/schema/messages/header/header_schema.json/" {
-		return "schemas/header.json"
-	}
 	source = strings.TrimSuffix(source, "/")
 	source = strings.TrimPrefix(source, rdssPrefix)
+
+	// This is what makes possible to have references like:
+	//   https://www.jisc.ac.uk/rdss/schema/types.json
+	// In addition to:
+	//   https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/create/request_schema.json
 	if !strings.HasPrefix(source, "messages/") {
 		source = fmt.Sprintf("schemas/%s", source)
 	}
+
 	return source
 }
 

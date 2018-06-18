@@ -8,16 +8,14 @@ type Organisation struct {
 }
 
 type Person struct {
-	PersonUuid             *UUID                            `json:"personUuid"`
-	PersonIdentifier       []PersonIdentifier               `json:"personIdentifier"`
-	PersonEntitlement      []PersonRoleEnum                 `json:"personEntitlement"`
-	PersonAffiliation      []EduPersonScopedAffiliationEnum `json:"personAffiliation"`
-	PersonGivenName        string                           `json:"personGivenName"`
-	PersonCn               string                           `json:"personCn"`
-	PersonSn               string                           `json:"personSn"`
-	PersonTelephoneNumber  string                           `json:"personTelephoneNumber"`
-	PersonMail             string                           `json:"personMail"`
-	PersonOrganisationUnit OrganisationUnit                 `json:"personOrganisationUnit"`
+	PersonUuid             *UUID              `json:"personUuid"`
+	PersonIdentifier       []PersonIdentifier `json:"personIdentifier"`
+	PersonHonorificPrefix  string             `json:"personHonorificPrefix,omitempty"`
+	PersonGivenNames       string             `json:"personGivenNames"`
+	PersonFamilyNames      string             `json:"personFamilyNames"`
+	PersonHonorificSuffix  string             `json:"personHonorificSuffix,omitempty"`
+	PersonMail             string             `json:"personMail,omitempty"`
+	PersonOrganisationUnit OrganisationUnit   `json:"personOrganisationUnit"`
 }
 
 type PersonIdentifier struct {
@@ -27,6 +25,6 @@ type PersonIdentifier struct {
 
 type OrganisationUnit struct {
 	OrganisationUnitUuid *UUID        `json:"organisationUnitUuid"`
-	OrganisationUuidNane string       `json:"organisationUnitName"`
+	OrganisationUuidName string       `json:"organisationUnitName"`
 	Organisation         Organisation `json:"organisation"`
 }

@@ -30,6 +30,10 @@ func TestTimestampEncoding(t *testing.T) {
 			[]byte(`{"prop":"1997-07-16T19:20:30.45+01:00"}`),
 		},
 		{
+			&Doc{Prop: Timestamp(time.Date(2004, time.August, 1, 10, 0, 0, 0, time.UTC))},
+			[]byte(`{"prop":"2004-08-01T10:00:00-00:00"}`),
+		},
+		{
 			&Doc{Prop: Timestamp{}},
 			[]byte(`{"prop":null}`),
 		},

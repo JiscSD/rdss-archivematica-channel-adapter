@@ -90,43 +90,6 @@ func (t DateTypeEnum) String() string {
 	return ""
 }
 
-// https://www.jisc.ac.uk/rdss/schema/material_asset.json/#/definitions/person (.personAffiliation, :required)
-type EduPersonScopedAffiliationEnum int
-
-const (
-	_                                                                     = iota
-	EduPersonScopedAffiliationEnum_student EduPersonScopedAffiliationEnum = iota
-	EduPersonScopedAffiliationEnum_staff
-	EduPersonScopedAffiliationEnum_faculty
-	EduPersonScopedAffiliationEnum_employee
-	EduPersonScopedAffiliationEnum_member
-	EduPersonScopedAffiliationEnum_affiliate
-	EduPersonScopedAffiliationEnum_alum
-	EduPersonScopedAffiliationEnum_libraryWalkIn
-)
-
-func (t EduPersonScopedAffiliationEnum) String() string {
-	switch t {
-	case EduPersonScopedAffiliationEnum_student:
-		return "student"
-	case EduPersonScopedAffiliationEnum_staff:
-		return "staff"
-	case EduPersonScopedAffiliationEnum_faculty:
-		return "faculty"
-	case EduPersonScopedAffiliationEnum_employee:
-		return "employee"
-	case EduPersonScopedAffiliationEnum_member:
-		return "member"
-	case EduPersonScopedAffiliationEnum_affiliate:
-		return "affiliate"
-	case EduPersonScopedAffiliationEnum_alum:
-		return "alum"
-	case EduPersonScopedAffiliationEnum_libraryWalkIn:
-		return "libraryWalkIn"
-	}
-	return ""
-}
-
 // https://www.jisc.ac.uk/rdss/schema/intellectual_asset.json/#/definitions/file (.fileUse, :required)
 type FileUseEnum int
 
@@ -360,24 +323,15 @@ type PersonIdentifierTypeEnum int
 const (
 	_                                                       = iota
 	PersonIdentifierTypeEnum_ORCID PersonIdentifierTypeEnum = iota
-	PersonIdentifierTypeEnum_FOAF
-	PersonIdentifierTypeEnum_Twitter
-	PersonIdentifierTypeEnum_eduPersonTargetedID
-	PersonIdentifierTypeEnum_eduPersonPrincipleName
+	PersonIdentifierTypeEnum_researcherId
 )
 
 func (t PersonIdentifierTypeEnum) String() string {
 	switch t {
 	case PersonIdentifierTypeEnum_ORCID:
 		return "ORCID"
-	case PersonIdentifierTypeEnum_FOAF:
-		return "FOAF"
-	case PersonIdentifierTypeEnum_Twitter:
-		return "Twitter"
-	case PersonIdentifierTypeEnum_eduPersonTargetedID:
-		return "eduPersonTargetedID"
-	case PersonIdentifierTypeEnum_eduPersonPrincipleName:
-		return "eduPersonPrincipleName"
+	case PersonIdentifierTypeEnum_researcherId:
+		return "researcherId"
 	}
 	return ""
 }

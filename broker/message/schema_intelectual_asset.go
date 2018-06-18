@@ -6,19 +6,19 @@ type File struct {
 	FileName                string              `json:"fileName"`
 	FileSize                int                 `json:"fileSize"`
 	FileLabel               string              `json:"fileLabel,omitempty"`
-	FileDateCreated         Date                `json:"fileDateCreated,omitempty"`
+	FileDateCreated         Timestamp           `json:"fileDateCreated,omitempty"`
 	FileRights              Rights              `json:"fileRights,omitempty"`
 	FileChecksum            []Checksum          `json:"fileChecksum"`
 	FileFormatType          string              `json:"fileFormatType,omitempty"`
 	FileCompositionLevel    string              `json:"fileCompositionLevel"`
 	FileHasMimeType         bool                `json:"fileHasMimeType,omitempty"`
-	FileDateModified        []Date              `json:"fileDateModified"`
+	FileDateModified        []Timestamp         `json:"fileDateModified"`
 	FilePuid                []string            `json:"filePuid,omitempty"`
 	FileUse                 FileUseEnum         `json:"fileUse"`
 	FilePreservationEvent   []PreservationEvent `json:"filePreservationEvent"`
 	FileUploadStatus        UploadStatusEnum    `json:"fileUploadStatus"`
 	FileStorageStatus       StorageStatusEnum   `json:"fileStorageStatus"`
-	FileLastDownload        Date                `json:"fileLastDownloaded,omitempty"`
+	FileLastDownload        Timestamp           `json:"fileLastDownloaded,omitempty"`
 	FileTechnicalAttributes []string            `json:"fileTechnicalAttributes,omitempty"`
 	FileStorageLocation     string              `json:"fileStorageLocation"`
 	FileStoragePlatform     FileStoragePlatform `json:"fileStoragePlatform"`
@@ -43,42 +43,21 @@ type FileStoragePlatform struct {
 	StoragePlatformCost string          `json:"storagePlatformCost"`
 }
 
-type Permission struct {
-	Read    bool `json:"read"`
-	Write   bool `json:"write"`
-	Control bool `json:"control"`
-	Append  bool `json:"append"`
-}
-
-type FilePermission struct {
-	Permission Permission `json:"permission"`
-	File       File       `json:"File"`
-}
-
-type Group struct {
-	GroupUuid           *UUID            `json:"groupUuid"`
-	GroupName           string           `json:"groupName"`
-	GroupIdentifier     string           `json:"groupIdentifier"`
-	GroupFilePermission []FilePermission `json:"groupFilePermission"`
-	GroupMembers        []Person         `json:"groupMembers,omitempty"`
-}
-
 type Grant struct {
 	GrantUuid       *UUID            `json:"grantUuid"`
 	GrantIdentifier string           `json:"grantIdentifier"`
 	GrantFunder     OrganisationRole `json:"grantFunder"`
-	GrantStart      Date             `json:"grantStart"`
-	GrantEnd        Date             `json:"grantEnd"`
+	GrantStart      Timestamp        `json:"grantStart"`
+	GrantEnd        Timestamp        `json:"grantEnd"`
 }
 
 type Project struct {
 	ProjectUuid        *UUID        `json:"projectUuid"`
-	ProjectIdentifier  []string     `json:"projectIdentifier"`
+	ProjectIdentifier  []Identifier `json:"projectIdentifier"`
 	ProjectName        string       `json:"projectName"`
 	ProjectDescription string       `json:"projectDescription"`
 	ProjectCollection  []Collection `json:"projectCollection"`
-	ProjectGroup       []Group      `json:"projectGroup"`
 	ProjectGrant       []Grant      `json:"projectGrant,omitempty"`
-	ProjectStart       Date         `json:"projectStart"`
-	ProjectEnd         Date         `json:"projectEnd"`
+	ProjectStart       Timestamp    `json:"projectStart"`
+	ProjectEnd         Timestamp    `json:"projectEnd"`
 }
