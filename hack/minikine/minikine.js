@@ -7,10 +7,11 @@ const SETTINGS = {
   'port': process.env.MINIKINE_PORT || 4567,
   'region': process.env.MINIKINE_REGION || 'eu-west-2',
 
-  // So far RDSS has defined three streams in their Messaging API
-  'streamMain': process.env.MINIKINE_STREAM_MAIN || 'main',
-  'streamInvalid': process.env.MINIKINE_STREAM_INVALID || 'invalid',
+  // So far RDSS has defined four streams in their Messaging API
   'streamError': process.env.MINIKINE_STREAM_ERROR || 'error',
+  'streamInput': process.env.MINIKINE_STREAM_INPUT || 'input',
+  'streamInvalid': process.env.MINIKINE_STREAM_INVALID || 'invalid',
+  'streamOutput': process.env.MINIKINE_STREAM_OUTPUT || 'output',
 
   // The number of streams that each shard is going to have
   'streamShards': process.env.MINIKINE_STREAM_SHARDS || 4
@@ -37,7 +38,7 @@ kinesaliteServer.listen(SETTINGS.port, function (err) {
 
 // This function creates the streams once the server has started.
 function bootstrap(kinesis) {
-  let streams = Array('streamMain', 'streamInvalid', 'streamError')
+  let streams = Array('streamError', 'streamInput', 'streamInvalid', 'streamOutput')
   for (let i in streams) {
     let stream = SETTINGS[streams[i]]
     let params = { ShardCount: SETTINGS.streamShards, StreamName: stream }
