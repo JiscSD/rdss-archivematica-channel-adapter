@@ -68,6 +68,7 @@ app_name = "rdss_am"
 region = ""
 tls = true
 endpoint = ""
+role_arn = ""
 tls_dynamodb = true
 endpoint_dynamodb = ""
 `

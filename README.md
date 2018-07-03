@@ -253,6 +253,12 @@ When set to `true`, the client uses the TLS protocol to communicate securely wit
 
 When set to a non-empty string, it's used as the AWS service endpoint, e.g.: `"http://127.0.0.1:4567"`.
 
+:heavy_minus_sign: `BROKER.KINESIS.ROLE_ARN`
+
+> Default: `""`
+
+When set to a non-empty string, it's used as the IAM IAM role that the Kinesis client assumes using STS.
+
 :heavy_minus_sign: `BROKER.KINESIS.TLS_DYNAMODB`
 
 > Default: `true`

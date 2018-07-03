@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
@@ -136,8 +137,16 @@ func getKinesisInstance(opts *backend.Opts) kinesisiface.KinesisAPI {
 			config = config.WithDisableSSL(!tls)
 		}
 	}
-
-	return kinesis.New(session.Must(session.NewSession(config)))
+	var client kinesisiface.KinesisAPI
+	if roleARN, ok := opts.Opts["role_arn"]; ok && roleARN != "" {
+		sess := session.Must(session.NewSession()) // Initial credentials to use STS API.
+		creds := stscreds.NewCredentials(sess, roleARN)
+		config = config.WithCredentials(creds)
+		client = kinesis.New(sess, config)
+	} else {
+		client = kinesis.New(session.Must(session.NewSession(config)))
+	}
+	return client
 }
 
 func getDynamoDBInstance(opts *backend.Opts) dynamodbiface.DynamoDBAPI {
