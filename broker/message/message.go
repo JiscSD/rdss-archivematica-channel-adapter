@@ -45,7 +45,7 @@ func New(t MessageType, c MessageClass) *Message {
 			Version:   Version,
 			Generator: version.AppVersion(),
 		},
-		MessageBody: typedBody(t, ""),
+		MessageBody: typedBody(t, nil),
 	}
 }
 
@@ -120,13 +120,13 @@ func (m *Message) UnmarshalJSON(data []byte) error {
 
 // typedBody returns an interface{} type where the type of the underlying value
 // is chosen after the header message type.
-func typedBody(t MessageType, correlationID string) interface{} {
+func typedBody(t MessageType, correlationID *UUID) interface{} {
 	var body interface{}
 	switch {
 	case t == MessageTypeMetadataCreate:
 		body = new(MetadataCreateRequest)
 	case t == MessageTypeMetadataRead:
-		if correlationID == "" {
+		if correlationID == nil {
 			body = new(MetadataReadRequest)
 		} else {
 			body = new(MetadataReadResponse)
@@ -136,7 +136,7 @@ func typedBody(t MessageType, correlationID string) interface{} {
 	case t == MessageTypeMetadataDelete:
 		body = new(MetadataDeleteRequest)
 	case t == MessageTypeVocabularyRead:
-		if correlationID == "" {
+		if correlationID == nil {
 			body = new(VocabularyReadRequest)
 		} else {
 			body = new(VocabularyReadResponse)

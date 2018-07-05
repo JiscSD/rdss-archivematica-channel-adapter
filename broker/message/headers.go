@@ -11,7 +11,7 @@ import (
 // so forth.
 type MessageHeader struct {
 	ID               *UUID            `json:"messageId"`
-	CorrelationID    string           `json:"correlationId,omitempty"`
+	CorrelationID    *UUID            `json:"correlationId,omitempty"`
 	MessageClass     MessageClass     `json:"messageClass"`
 	MessageType      MessageType      `json:"messageType"`
 	ReturnAddress    string           `json:"returnAddress,omitempty"`

@@ -27,7 +27,7 @@ func TestMessage_ToJSON(t *testing.T) {
 	message := &Message{
 		MessageHeader: MessageHeader{
 			ID:            MustUUID("efac164a-c9bd-45e0-8991-1c505e4f45c2"),
-			CorrelationID: "4501437a-ce95-4372-be5c-277cb6a826eb",
+			CorrelationID: MustUUID("4501437a-ce95-4372-be5c-277cb6a826eb"),
 			MessageClass:  MessageClassCommand,
 			MessageType:   MessageTypeMetadataCreate,
 			ReturnAddress: "string",
@@ -242,7 +242,7 @@ func TestMessage_New(t *testing.T) {
 func TestMessage_ID(t *testing.T) {
 	m := &Message{
 		MessageHeader: MessageHeader{ID: NewUUID()},
-		MessageBody:   typedBody(MessageTypeVocabularyRead, ""),
+		MessageBody:   typedBody(MessageTypeVocabularyRead, nil),
 	}
 	if have, want := m.ID(), m.MessageHeader.ID.String(); have != want {
 		t.Errorf("Unexpected ID; have %v, want %v", have, want)
@@ -269,18 +269,18 @@ func TestMessage_TagError(t *testing.T) {
 func TestMessage_typedBody(t *testing.T) {
 	tests := []struct {
 		t             MessageType
-		correlationID string
+		correlationID *UUID
 		want          interface{}
 	}{
-		{MessageTypeMetadataCreate, "", new(MetadataCreateRequest)},
-		{MessageTypeMetadataRead, "", new(MetadataReadRequest)},
-		{MessageTypeMetadataRead, "ID", new(MetadataReadResponse)},
-		{MessageTypeMetadataUpdate, "", new(MetadataUpdateRequest)},
-		{MessageTypeMetadataDelete, "", new(MetadataDeleteRequest)},
-		{MessageTypeVocabularyRead, "", new(VocabularyReadRequest)},
-		{MessageTypeVocabularyRead, "ID", new(VocabularyReadResponse)},
-		{MessageTypeVocabularyPatch, "", new(VocabularyPatchRequest)},
-		{MessageType(-1), "", nil},
+		{MessageTypeMetadataCreate, nil, new(MetadataCreateRequest)},
+		{MessageTypeMetadataRead, nil, new(MetadataReadRequest)},
+		{MessageTypeMetadataRead, NewUUID(), new(MetadataReadResponse)},
+		{MessageTypeMetadataUpdate, nil, new(MetadataUpdateRequest)},
+		{MessageTypeMetadataDelete, nil, new(MetadataDeleteRequest)},
+		{MessageTypeVocabularyRead, nil, new(VocabularyReadRequest)},
+		{MessageTypeVocabularyRead, NewUUID(), new(VocabularyReadResponse)},
+		{MessageTypeVocabularyPatch, nil, new(VocabularyPatchRequest)},
+		{MessageType(-1), nil, nil},
 	}
 	for _, tt := range tests {
 		if got := typedBody(tt.t, tt.correlationID); !reflect.DeepEqual(got, tt.want) {
@@ -313,9 +313,9 @@ func TestMessage_DecodeFixtures(t *testing.T) {
 			blob := specdata.MustAsset(tt.pathFixture)
 			dec := json.NewDecoder(bytes.NewReader(blob))
 
-			var correlationID string
+			var correlationID *UUID
 			if tt.isResponse {
-				correlationID = "bddccd20-f548-11e7-be52-730af1229478"
+				correlationID = MustUUID("bddccd20-f548-11e7-be52-730af1229478")
 			}
 
 			// Validation test
