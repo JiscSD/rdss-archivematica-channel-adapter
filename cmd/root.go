@@ -20,10 +20,10 @@ const defaultConfig = `# RDSS Archivematica Channel Adapter
 level = "INFO"
 
 [amclient]
-# URL of the Archivematica Dashboard
 url = ""
 user = ""
 key = ""
+transfer_dir = ""
 
 [s3]
 force_path_style = false
@@ -34,7 +34,6 @@ secret_key = ""
 region = ""
 
 [consumer]
-archivematica_shared_dir = "/var/archivematica/sharedDirectory"
 backend = "builtin"
 dynamodb_tls = true
 dynamodb_table = "consumer_storage"

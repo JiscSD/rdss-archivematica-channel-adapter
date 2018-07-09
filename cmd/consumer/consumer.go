@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -65,16 +64,14 @@ func start() {
 		logger.Fatalln(err)
 	}
 
-	amSharedDir := viper.GetString("consumer.archivematica_shared_dir")
-	amSharedFs := afero.NewBasePathFs(afero.NewOsFs(), amSharedDir)
+	amClient, err := createAmClient()
+	if err != nil {
+		logger.Fatalln(err)
+	}
 
 	quit := make(chan struct{})
 	go func() {
-		c := consumer.MakeConsumer(
-			ctx, logger,
-			br, createAmClient(), s3Client, amSharedFs,
-			createConsumerStorage(),
-		)
+		c := consumer.MakeConsumer(ctx, logger, br, amClient, s3Client, createConsumerStorage())
 		c.Start()
 
 		quit <- struct{}{}
@@ -130,11 +127,15 @@ func createBrokerClient() (*broker.Broker, error) {
 	return broker.New(ba, logger, brokerConfig)
 }
 
-func createAmClient() *amclient.Client {
+func createAmClient() (*amclient.Client, error) {
+	if err := amclient.TransferDir(viper.GetString("amclient.transfer_dir")); err != nil {
+		return nil, err
+	}
 	return amclient.NewClient(nil,
 		viper.GetString("amclient.url"),
 		viper.GetString("amclient.user"),
-		viper.GetString("amclient.key"))
+		viper.GetString("amclient.key"),
+	), nil
 }
 
 func createS3Client() (s3.ObjectStorage, error) {

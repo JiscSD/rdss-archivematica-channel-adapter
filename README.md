@@ -69,6 +69,12 @@ Archivematica API - Username, e.g.:  `"demo"`.
 
 Archivematica API - Key, e.g.: `"eid3Aitheijoo1ohce2pho4eiDei0lah"`.
 
+:heavy_minus_sign: `AMCLIENT.TRANSFER_DIR`
+
+> Default: `""`
+
+The base directory where transfers will be downloaded. It must match the path of the default transfer source location as defined in Archivematica Storage Service. For a development environment, the default is `/home`. Transfers will be downloaded into temporary directories created inside the `TRANSFER_DIR`.
+
 :heavy_minus_sign: `S3.FORCE_PATH_STYLE`
 
 > Default: `false`
@@ -104,12 +110,6 @@ When set to a non-empty string, it's combined with `S3.ACCESS_KEY` to set up the
 > Default: `""`
 
 AWS Region. If empty, the AWS SDK will throw an error. E.g.: `eu-west-2`.
-
-:heavy_minus_sign: `CONSUMER.ARCHIVEMATICA_SHARED_DIR`
-
-> Default: `"/var/archivematica/sharedDirectory"`
-
-Location of the Archivematica Shared Directory.
 
 :heavy_minus_sign: `CONSUMER.BACKEND`
 

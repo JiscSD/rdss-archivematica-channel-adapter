@@ -72,15 +72,11 @@ func tearUp() {
 	server = httptest.NewServer(mux)
 	url, _ := url.Parse(server.URL)
 	amc, _ := amclient.New(nil, url.String(), "", "", amclient.SetFs(fs))
-	fs := afero.NewBasePathFs(afero.NewMemMapFs(), "/")
 
 	ctx, cancel = context.WithCancel(context.Background())
 
 	// Consumer with mocks
-	c = consumer.MakeConsumer(
-		ctx, logger,
-		br, amc, &RandomObjectStorage{}, fs,
-		consumer.NewStorageInMemory())
+	c = consumer.MakeConsumer(ctx, logger, br, amc, &RandomObjectStorage{}, consumer.NewStorageInMemory())
 
 	go func() {
 		c.Start()

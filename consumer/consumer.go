@@ -29,12 +29,11 @@ type Consumer interface {
 
 // ConsumerImpl is an implementation of Consumer.
 type ConsumerImpl struct {
-	broker     *broker.Broker
-	ctx        context.Context
-	logger     log.FieldLogger
-	amc        *amclient.Client
-	s3         s3.ObjectStorage
-	amSharedFs afero.Fs
+	broker *broker.Broker
+	ctx    context.Context
+	logger log.FieldLogger
+	amc    *amclient.Client
+	s3     s3.ObjectStorage
 
 	// storage supports the persistency of certain data attributes that we
 	// need to access to implement a RDSS preservation system.
@@ -48,16 +47,14 @@ func MakeConsumer(
 	broker *broker.Broker,
 	amc *amclient.Client,
 	s3 s3.ObjectStorage,
-	amSharedFs afero.Fs,
 	storage Storage) *ConsumerImpl {
 	return &ConsumerImpl{
-		ctx:        ctx,
-		logger:     logger,
-		broker:     broker,
-		amc:        amc,
-		s3:         s3,
-		amSharedFs: amSharedFs,
-		storage:    storage,
+		ctx:     ctx,
+		logger:  logger,
+		broker:  broker,
+		amc:     amc,
+		s3:      s3,
+		storage: storage,
 	}
 }
 
@@ -133,7 +130,7 @@ func (c *ConsumerImpl) startTransfer(body *message.ResearchObject) (string, erro
 	if len(body.ObjectFile) == 0 {
 		return "", nil
 	}
-	t, err := c.amc.TransferSession(body.ObjectTitle, c.amSharedFs)
+	t, err := c.amc.TransferSession(body.ObjectTitle)
 	if err != nil {
 		return "", err
 	}
