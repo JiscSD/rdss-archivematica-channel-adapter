@@ -1,39 +1,27 @@
 package amclient
 
 import (
-	"bytes"
 	"context"
 	"io/ioutil"
 	"net/url"
 	"path/filepath"
 	"reflect"
-	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
 )
 
-// tempAmSharedFs is a helper used to create temporary filesystems used as the
-// Archivematica Shared Directory.
-func tempAmSharedFs(t *testing.T) afero.Fs {
-	dir, err := ioutil.TempDir("", "amShareDirTest")
+// setupTransferDir sets up the global `transferFS` off a temporary directory.
+func setupTransferDir(t *testing.T) *afero.Afero {
+	tmpdir, err := ioutil.TempDir("", "transferDirTest")
 	if err != nil {
 		t.Fatalf("cannot create temporary directory: %s", err)
 	}
-
-	fs := afero.NewBasePathFs(afero.NewOsFs(), dir)
-
-	// Typically tmpDir and standardTransferDir are pre-created so we're doing
-	// the same in our tests.
-	if err := fs.MkdirAll(tmpDir, 0755); err != nil {
+	err = TransferDir(tmpdir)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := fs.MkdirAll(standardTransferDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	return fs
+	return transferFS
 }
 
 // newTransferSession is a helper used to created TransferSession objects.
@@ -42,8 +30,8 @@ func newTransferSession(t *testing.T, name string) *TransferSession {
 		name = "MyTransfer"
 	}
 	c := getClient(t)
-	amSharedFs := tempAmSharedFs(t)
-	ts, err := NewTransferSession(c, name, amSharedFs)
+	setupTransferDir(t)
+	ts, err := NewTransferSession(c, name)
 	if err != nil {
 		t.Fatalf("NewTransferSession() returned a non-nil error: %v", err)
 	}
@@ -54,53 +42,35 @@ func newTransferSession(t *testing.T, name string) *TransferSession {
 func getClient(t *testing.T) *Client {
 	url, _ := url.Parse("http://localhost")
 	c := NewClient(nil, url.String(), "", "")
-	c.Transfer = &transferServiceMock{t: t}
+	c.Package = &packageServiceMock{t: t}
 	return c
 }
 
-type transferServiceMock struct {
-	t          *testing.T
-	approveReq *TransferApproveRequest
+type packageServiceMock struct {
+	t         *testing.T
+	createReq *PackageCreateRequest
 }
 
-func (tsm *transferServiceMock) Start(ctx context.Context, req *TransferStartRequest) (*TransferStartResponse, *Response, error) {
-	return nil, nil, nil
-}
-
-func (tsm *transferServiceMock) Approve(ctx context.Context, req *TransferApproveRequest) (*TransferApproveResponse, *Response, error) {
-	tsm.approveReq = req
-	return &TransferApproveResponse{
-		UUID: "13d9e74c-f88a-44c3-9657-c756eb3fa1c8",
+func (m *packageServiceMock) Create(ctx context.Context, r *PackageCreateRequest) (*PackageCreateResponse, *Response, error) {
+	m.createReq = r
+	return &PackageCreateResponse{
+		ID: "53e80f90-0d34-4103-8583-8d86cbf70069",
 	}, &Response{}, nil
 }
 
-func (tsm *transferServiceMock) Unapproved(ctx context.Context, req *TransferUnapprovedRequest) (*TransferUnapprovedResponse, *Response, error) {
-	return &TransferUnapprovedResponse{
-		Message: "Fetched unapproved transfers successfully.",
-		Results: []*TransferUnapprovedResponseResult{
-			&TransferUnapprovedResponseResult{Directory: "Test"},
-		},
-	}, &Response{}, nil
-}
-
-func Test_tempDir(t *testing.T) {
-	fs := tempAmSharedFs(t)
-
-	name, err := tempDir(fs)
+func Test_tmpfs(t *testing.T) {
+	tfs := setupTransferDir(t)
+	fs, err := tmpfs(tfs)
 	if err != nil {
-		// No reason to fail.
 		t.Fatalf("Unexpected non-nil error returned: %v", err)
 	}
-
-	stat, err := fs.Stat(name)
+	path := afero.FullBaseFsPath(fs.Fs.(*afero.BasePathFs), "/")
+	stat, err := tfs.Stat(path)
 	if err != nil {
-		t.Fatalf("fs.Stat(name) returned an error: %v", err)
+		t.Fatalf("fs.Stat(path) returned an error: %v", err)
 	}
 	if !stat.IsDir() {
 		t.Fatal("Directory not created")
-	}
-	if !strings.HasPrefix(name, "tmp/amclient") {
-		t.Fatalf("Unexpected path returned: %s", name)
 	}
 }
 
@@ -109,9 +79,8 @@ func TestNewTransferSession(t *testing.T) {
 		name = "MyTransfer"
 		ts   = newTransferSession(t, name)
 	)
-
-	if have, want := ts.originalName, name; have != want {
-		t.Fatalf("NewTransferSession() unexpected originalName; have %s, want %s", have, want)
+	if have, want := ts.name, name; have != want {
+		t.Fatalf("NewTransferSession() unexpected name; have %s, want %s", have, want)
 	}
 	if ts.Metadata == nil || ts.ChecksumsMD5 == nil || ts.ChecksumsSHA1 == nil || ts.ChecksumsSHA256 == nil {
 		t.Fatal("NewTransferSession() returned a TransferSession not initialized propery")
@@ -124,78 +93,19 @@ func TestNewTransferSession(t *testing.T) {
 	}
 }
 
-func TestTransferSession_path(t *testing.T) {
-	var regex = regexp.MustCompile(`^tmp/amclientTransfer\d+$`)
-	ts := newTransferSession(t, "")
-	name := ts.path()
-	if !regex.MatchString(name) {
-		t.Fatalf("TransferSession.path() returned an unexpected string: %s", name)
-	}
-}
+func TestTransferSession_Start(t *testing.T) {
+	ts := newTransferSession(t, "Test")
 
-func TestTransferSession_move(t *testing.T) {
-	name := "MyTransfer"
-	ts := newTransferSession(t, name)
-
-	// Add a file to the transfer. We're going to check if it's moved.
-	var (
-		fileName = "foobar.jpg"
-		fileBlob = []byte{1, 2, 3, 4}
-	)
-	f, err := ts.Create(fileName)
+	id, err := ts.Start()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("TransferSession.Start() failed: %v", err)
 	}
-	f.Write(fileBlob)
-	f.Close()
-
-	if err := ts.move(); err != nil {
-		t.Fatalf("TransferSession.move() returned a non-nil error: %v", err)
+	if have, want := id, "53e80f90-0d34-4103-8583-8d86cbf70069"; have != want {
+		t.Errorf("Have %s, want %s", have, want)
 	}
-	have, err := ts.fs.ReadFile(fileName)
-	if err != nil || !bytes.Equal(fileBlob, have) {
-		t.Fatalf("TransferSession.move() did not move the contents properly")
-	}
-}
-
-func TestTransferSession_move_WithRetry(t *testing.T) {
-	name := "MyTransfer"
-	ts := newTransferSession(t, name)
-
-	// Cause conflict by creating "MyTransfer" and "MyTransfer-1".
-	if err := ts.amSharedFs.MkdirAll(filepath.Join(standardTransferDir, name), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := ts.amSharedFs.MkdirAll(filepath.Join(standardTransferDir, name)+"-1", 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := ts.move(); err != nil {
-		t.Fatalf("TransferSession.move() returned a non-nil error: %v", err)
-	}
-
-	// I'm expecting to see "MyTransfer-2".
-	if have, want := ts.path(), filepath.Join(standardTransferDir, name)+"-2"; have != want {
-		t.Fatalf("TransferSession.move() did not rename as expected; have %s, want %s", have, want)
-	}
-}
-
-func TestTransferSession_move_WithRetryMaxReached(t *testing.T) {
-	name := "MyTransfer"
-	ts := newTransferSession(t, name)
-
-	// Cause conflict by creating "MyTransfer".
-	if err := ts.amSharedFs.MkdirAll(filepath.Join(standardTransferDir, name), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := ts.amSharedFs.MkdirAll(filepath.Join(standardTransferDir, name)+"-1", 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Override maxRenameAttempts. We would need two attempts but have only one!
-	maxRenameAttempts = 1
-	if err := ts.move(); err == nil {
-		t.Fatalf("TransferSession.move() as expected to fail but it didn't")
+	packageService := ts.c.Package.(*packageServiceMock)
+	if have, want := packageService.createReq.Path, ts.path(); have != want {
+		t.Errorf("Have %s, want %s", have, want)
 	}
 }
 
@@ -228,6 +138,18 @@ func TestTransferSession_Create(t *testing.T) {
 		}
 	}
 }
+func TestTransferSession_Destroy(t *testing.T) {
+	ts := newTransferSession(t, "MyTransfer")
+	afero.TempFile(ts.fs, "/", "uno")
+	afero.TempFile(ts.fs, "/", "dos")
+	if err := ts.Destroy(); err != nil {
+		t.Fatalf("TransferSession.Destroy() returned an error: %v", err)
+	}
+	contents, _ := transferFS.ReadDir("/")
+	if len(contents) > 0 {
+		t.Fatal("TransferSession.Destroy() didn't have the expected results")
+	}
+}
 
 func TestTransferSession_Contents(t *testing.T) {
 	ts := newTransferSession(t, "")
@@ -236,22 +158,6 @@ func TestTransferSession_Contents(t *testing.T) {
 
 	if want, have := 2, len(ts.Contents()); want != have {
 		t.Fatalf("Created %d files, only %d found", want, have)
-	}
-}
-
-func TestTransferSession_Destroy(t *testing.T) {
-	var (
-		ts   = newTransferSession(t, "")
-		path = ts.path()
-	)
-	afero.TempFile(ts.fs, "/", "uno")
-	afero.TempFile(ts.fs, "/", "dos")
-
-	if err := ts.Destroy(); err != nil {
-		t.Fatalf("TransferSession.Destroy() returned an error: %v", err)
-	}
-	if found, err := ts.amSharedFs.DirExists(path); err != nil || found {
-		t.Fatalf("TransferSession.Destroy() didn't have the expected results; err=%v, found=%t", err, found)
 	}
 }
 
@@ -271,26 +177,6 @@ func TestTransferSession_createMetadataDir(t *testing.T) {
 	}
 	if !info.IsDir() {
 		t.Fatalf("/metadata is not a directory")
-	}
-}
-
-func TestTransferSession_Start(t *testing.T) {
-	ts := newTransferSession(t, "Test")
-
-	id, err := ts.Start()
-	if err != nil {
-		t.Fatalf("TransferSession.Start() failed: %v", err)
-	}
-	if have, want := id, ts.id; have != want {
-		t.Errorf("Have %s, want %s", have, want)
-	}
-
-	transferService := ts.c.Transfer.(*transferServiceMock)
-	if have, want := transferService.approveReq.Directory, ts.path(); have != want {
-		t.Errorf("Have %s, want %s", have, want)
-	}
-	if transferService.approveReq.Type != standardTransferType {
-		t.Errorf("Have %s, want %s", transferService.approveReq.Type, standardTransferType)
 	}
 }
 

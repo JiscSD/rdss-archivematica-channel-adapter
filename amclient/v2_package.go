@@ -30,6 +30,8 @@ type PackageCreateResponse struct {
 	ID string `json:"id,omitempty"`
 }
 
+const standardTransferType = "standard"
+
 func (s *PackageServiceOp) Create(ctx context.Context, r *PackageCreateRequest) (*PackageCreateResponse, *Response, error) {
 	path := fmt.Sprintf("%s/", packageBasePath)
 
