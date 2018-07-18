@@ -140,7 +140,13 @@ func getKinesisInstance(opts *backend.Opts) kinesisiface.KinesisAPI {
 	var client kinesisiface.KinesisAPI
 	if roleARN, ok := opts.Opts["role_arn"]; ok && roleARN != "" {
 		sess := session.Must(session.NewSession()) // Initial credentials to use STS API.
-		creds := stscreds.NewCredentials(sess, roleARN)
+		credsOpts := []func(*stscreds.AssumeRoleProvider){}
+		if roleExternalID, ok := opts.Opts["role_external_id"]; ok && roleExternalID != "" {
+			credsOpts = append(credsOpts, func(p *stscreds.AssumeRoleProvider) {
+				p.ExternalID = aws.String(opts.Opts["role_external_id"])
+			})
+		}
+		creds := stscreds.NewCredentials(sess, roleARN, credsOpts...)
 		config = config.WithCredentials(creds)
 		client = kinesis.New(sess, config)
 	} else {

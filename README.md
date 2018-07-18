@@ -257,7 +257,13 @@ When set to a non-empty string, it's used as the AWS service endpoint, e.g.: `"h
 
 > Default: `""`
 
-When set to a non-empty string, it's used as the IAM IAM role that the Kinesis client assumes using STS.
+When set to a non-empty string, it's used as the IAM role that the Kinesis client assumes using STS.
+
+:heavy_minus_sign: `BROKER.KINESIS.ROLE_EXTERNAL_ID`
+
+> Default: `""`
+
+Optional `ExternalID` to pass along `ROLE_ARN`.
 
 :heavy_minus_sign: `BROKER.KINESIS.TLS_DYNAMODB`
 

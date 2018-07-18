@@ -98,6 +98,7 @@ func createBrokerClient() (*broker.Broker, error) {
 		"tls":               viper.GetString("broker.kinesis.tls"),
 		"endpoint":          viper.GetString("broker.kinesis.endpoint"),
 		"role_arn":          viper.GetString("broker.kinesis.role_arn"),
+		"role_external_id":  viper.GetString("broker.kinesis.role_external_id"),
 		"tls_dynamodb":      viper.GetString("broker.kinesis.tls_dynamodb"),
 		"endpoint_dynamodb": viper.GetString("broker.kinesis.endpoint_dynamodb"),
 	}

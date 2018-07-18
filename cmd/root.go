@@ -69,6 +69,7 @@ region = ""
 tls = true
 endpoint = ""
 role_arn = ""
+role_external_id = ""
 tls_dynamodb = true
 endpoint_dynamodb = ""
 `
