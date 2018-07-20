@@ -9,11 +9,8 @@ matrix:
   fast_finish: true
 install:
   - make tools
-  - go get github.com/mattn/goveralls
 script:
-  - $HOME/gopath/bin/goveralls
-      -ignore=publisher/pb/rpc.pb.go,broker/message/specdata/specdata.go
-      -service=travis-ci
+  - hack/coverage.sh --coveralls
   - make
   - make vendor-status
 notifications:

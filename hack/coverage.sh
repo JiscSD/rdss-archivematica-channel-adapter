@@ -4,44 +4,27 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-readonly __dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly __root="$(cd "$(dirname "${__dir}")" && pwd)"
+covermode=${COVERMODE:-atomic}
+coverprofile=$(mktemp /tmp/coverage.XXXXXXXXXX)
 
-readonly workdir="$(mktemp -d)"
-readonly profile="$workdir/cover.out"
-readonly mode=count
+hash goveralls 2>/dev/null || go get github.com/mattn/goveralls
 
 generate_cover_data() {
-	for pkg in "$@"; do
-		f="$workdir/$(echo $pkg | tr / -).cover"
-		go test -covermode="$mode" -coverprofile="$f" "$pkg"
-	done
-
-	echo "mode: $mode" >"$profile"
-	grep -h -v "^mode:" "$workdir"/*.cover >> "$profile"
+  go test -coverprofile="${coverprofile}" -covermode="${covermode}" $(go list ./... | grep -v publisher/pb)
 }
 
-show_cover_report() {
-	go tool cover -${1}="$profile"
+push_to_coveralls() {
+  goveralls -coverprofile="${coverprofile}" -service=travis-ci
 }
 
-cleanup() {
-	rm -rf ${workdir};
-}
+generate_cover_data
+go tool cover -func "${coverprofile}"
 
-cd ${__root}
-generate_cover_data $(go list ./... | grep -v '/vendor/')
-show_cover_report func
-
-if [ -n "${1+set}" ]; then
-	case "$1" in
-	"")
-		;;
-	--html)
-		show_cover_report html ;;
-	*)
-		echo >&2 "error: invalid option: $1"; exit 1 ;;
-	esac
-fi
-
-cleanup
+case "${1-}" in
+  --html)
+    go tool cover -html "${coverprofile}"
+    ;;
+  --coveralls)
+    push_to_coveralls
+    ;;
+esac
