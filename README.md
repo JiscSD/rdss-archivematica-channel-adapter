@@ -21,7 +21,7 @@ This repository holds the source code of the channel adapter that connects Archi
 
 The adapter is written in Go as a standalone application that runs next to Archivematica. Its main role is to abstract the complexities and specifics of the underlying queuing system from its users.
 
-If you want to build this application from the sources, use Go 1.9 or newer. Our `Dockerfile` uses Go 1.9. Our CI uses `1.x` (latest release available) and `tip` (development branch).
+If you want to build this application from the sources, use Go 1.10 or newer. Our `Dockerfile` uses Go 1.10. Our CI uses `1.x` (latest release available) and `tip` (development branch).
 
 ## Usage
 

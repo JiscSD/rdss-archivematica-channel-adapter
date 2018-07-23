@@ -1,4 +1,4 @@
-FROM golang:1.9.1-alpine
+FROM golang:1.10.3-alpine3.8
 WORKDIR /go/src/github.com/JiscRDSS/rdss-archivematica-channel-adapter
 COPY . .
 # Don't use `make testrace`, it won't work in Alpine Linux!
