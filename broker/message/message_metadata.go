@@ -8,7 +8,7 @@ import (
 
 // MetadataCreateRequest represents the body of the message.
 type MetadataCreateRequest struct {
-	ResearchObject
+	ResearchObjectBase
 }
 
 // MetadataCreateRequest returns the body of the message.
@@ -24,7 +24,7 @@ func (m Message) MetadataCreateRequest() (*MetadataCreateRequest, error) {
 
 // MetadataReadRequest represents the body of the message.
 type MetadataReadRequest struct {
-	ObjectUuid *UUID `json:"objectUuid"`
+	ObjectUUID *UUID `json:"objectUUID"`
 }
 
 // MetadataReadRequest returns the body of the message.
@@ -38,7 +38,7 @@ func (m Message) MetadataReadRequest() (*MetadataReadRequest, error) {
 
 // MetadataReadResponse represents the body of the message.
 type MetadataReadResponse struct {
-	ResearchObject
+	ResearchObjectBase
 }
 
 // MetadataReadResponse returns the body of the message.
@@ -54,7 +54,7 @@ func (m Message) MetadataReadResponse() (*MetadataReadResponse, error) {
 
 // MetadataUpdateRequest represents the body of the message.
 type MetadataUpdateRequest struct {
-	ResearchObject
+	ResearchObjectBase
 }
 
 // MetadataUpdateRequest returns the body of the message.
@@ -70,7 +70,7 @@ func (m Message) MetadataUpdateRequest() (*MetadataUpdateRequest, error) {
 
 // MetadataDeleteRequest represents the body of the message.
 type MetadataDeleteRequest struct {
-	ObjectUuid *UUID `json:"objectUuid"`
+	ObjectUUID *UUID `json:"objectUUID"`
 }
 
 // MetadataDeleteRequest returns the body of the message.

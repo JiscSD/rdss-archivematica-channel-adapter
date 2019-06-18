@@ -45,7 +45,6 @@ func TestNew(t *testing.T) {
 		{APPERRMET001, "[APPERRMET001]: description"},
 		{APPERRMET002, "[APPERRMET002]: description"},
 		{APPERRMET003, "[APPERRMET003]: description"},
-		{APPERRVOC002, "[APPERRVOC002]: description"},
 	}
 	for _, tt := range tests {
 		e := New(tt.k, desc)

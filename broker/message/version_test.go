@@ -10,6 +10,8 @@ import (
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
 )
 
+// TestVersion expects the nested repository (message-api-spec) to be pre-downloaded.
+// Use `git submodule update` to download the version set in the root repo.
 func TestVersion(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {
