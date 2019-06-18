@@ -7,7 +7,7 @@ set -o pipefail
 set -o nounset
 
 if ! which go-bindata > /dev/null 2>&1 ; then
-	echo >&2 "Cannot find go-bindata. Install with \"go get -u go get -u github.com/jteeuwen/go-bindata/...\""
+	echo >&2 "Cannot find go-bindata. Install with \"go get -u github.com/jteeuwen/go-bindata/...\""
 	echo >&2 "Aborting.";
 	exit 1;
 fi

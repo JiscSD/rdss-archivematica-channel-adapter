@@ -1,21 +1,25 @@
 package message
 
 type ResearchObject struct {
-	ObjectUuid              *UUID                    `json:"objectUuid"`
+	ObjectUUID              *UUID                    `json:"objectUUID"`
 	ObjectTitle             string                   `json:"objectTitle"`
 	ObjectPersonRole        []PersonRole             `json:"objectPersonRole"`
-	ObjectDescription       string                   `json:"objectDescription"`
+	ObjectDescription       []ObjectDescription      `json:"objectDescription,omitempty"`
 	ObjectRights            Rights                   `json:"objectRights"`
 	ObjectDate              []Date                   `json:"objectDate"`
-	ObjectKeywords          []string                 `json:"objectKeywords,omitempty"`
+	ObjectKeyword           []string                 `json:"objectKeyword,omitempty"`
 	ObjectCategory          []string                 `json:"objectCategory,omitempty"`
 	ObjectResourceType      ResourceTypeEnum         `json:"objectResourceType"`
 	ObjectValue             ObjectValueEnum          `json:"objectValue"`
 	ObjectIdentifier        []Identifier             `json:"objectIdentifier"`
 	ObjectRelatedIdentifier []IdentifierRelationship `json:"objectRelatedIdentifier,omitempty"`
 	ObjectOrganisationRole  []OrganisationRole       `json:"objectOrganisationRole"`
-	ObjectPreservationEvent []PreservationEvent      `json:"objectPreservationEvent,omitempty"`
 	ObjectFile              []File                   `json:"objectFile,omitempty"`
+}
+
+type ObjectDescription struct {
+	DescriptionValue string              `json:"descriptionValue"`
+	DescriptionType  DescriptionTypeEnum `json:"descriptionType"`
 }
 
 type IdentifierRelationship struct {
@@ -48,7 +52,7 @@ type Access struct {
 }
 
 type Date struct {
-	DateValue string       `json:"dateValue"`
+	DateValue Timestamp    `json:"dateValue"`
 	DateType  DateTypeEnum `json:"dateType"`
 }
 
@@ -58,10 +62,10 @@ type Identifier struct {
 }
 
 type Collection struct {
-	CollectionUuid              *UUID                    `json:"collectionUuid"`
+	CollectionUUID              *UUID                    `json:"collectionUUID"`
 	CollectionName              string                   `json:"collectionName"`
 	CollectionObject            []ResearchObject         `json:"collectionObject,omitempty"`
-	CollectionKeywords          []string                 `json:"collectionKeywords,omitempty"`
+	CollectionKeyword           []string                 `json:"collectionKeyword,omitempty"`
 	CollectionCategory          []string                 `json:"collectionCategory,omitempty"`
 	CollectionDescription       []string                 `json:"collectionDescription"`
 	CollectionRights            []Rights                 `json:"collectionRights"`

@@ -21,7 +21,7 @@ func ExampleBroker() {
 	var b, _, _ = newBroker(nil)
 
 	// Subscribe to MetadataDelete messages.
-	b.SubscribeType(message.MessageTypeMetadataDelete, func(msg *message.Message) error {
+	b.SubscribeType(message.MessageTypeEnum_MetadataDelete, func(msg *message.Message) error {
 		fmt.Println("MetadataCreate message received!")
 		return nil
 	})
@@ -29,7 +29,7 @@ func ExampleBroker() {
 	// A publisher can publish a MetadataDelete request. Make sure that the
 	// message is valid otherwise it will not be delivered to the subscriber.
 	_ = b.Metadata.Delete(context.Background(), &message.MetadataDeleteRequest{
-		ObjectUuid: message.MustUUID("8468f86b-a936-41b3-a8a7-ef37e3008ba8"),
+		ObjectUUID: message.MustUUID("8468f86b-a936-41b3-a8a7-ef37e3008ba8"),
 	})
 
 	// Output: MetadataCreate message received!
@@ -46,7 +46,7 @@ func TestPanickingSubscriber(t *testing.T) {
 
 func TestCounter(t *testing.T) {
 	var b, _, _ = newBroker(nil)
-	var msg = &message.MetadataDeleteRequest{ObjectUuid: message.MustUUID("c6065fb2-15e3-417f-9fcd-679ff8507e5e")}
+	var msg = &message.MetadataDeleteRequest{ObjectUUID: message.MustUUID("c6065fb2-15e3-417f-9fcd-679ff8507e5e")}
 	_ = b.Metadata.Delete(context.Background(), msg)
 	_ = b.Metadata.Delete(context.Background(), msg)
 	if got, want := b.Count(), uint64(2); got != want {
@@ -56,8 +56,8 @@ func TestCounter(t *testing.T) {
 
 func Test_messageHandler_duplicated(t *testing.T) {
 	b, _, _ := newBroker(nil)
-	m := message.New(message.MessageTypeMetadataDelete, message.MessageClassCommand)
-	m.MessageBody = &message.MetadataDeleteRequest{ObjectUuid: message.MustUUID("c6065fb2-15e3-417f-9fcd-679ff8507e5e")}
+	m := message.New(message.MessageTypeEnum_MetadataDelete, message.MessageClassEnum_Command)
+	m.MessageBody = &message.MetadataDeleteRequest{ObjectUUID: message.MustUUID("c6065fb2-15e3-417f-9fcd-679ff8507e5e")}
 	send := func() { _ = b.Request(context.Background(), m) }
 	// Send the same message twice.
 	send()
@@ -99,7 +99,7 @@ func Test_messageHandler_errorHandling(t *testing.T) {
 		return nil
 	})
 	// Send a message
-	_ = b.Metadata.Delete(context.Background(), &message.MetadataDeleteRequest{ObjectUuid: message.MustUUID("c6065fb2-15e3-417f-9fcd-679ff8507e5e")})
+	_ = b.Metadata.Delete(context.Background(), &message.MetadataDeleteRequest{ObjectUUID: message.MustUUID("c6065fb2-15e3-417f-9fcd-679ff8507e5e")})
 	// Wait up to a second, fail if the message is not received in time.
 	go func() {
 		time.Sleep(1 * time.Second)
@@ -115,7 +115,7 @@ func Test_messageHandler_errorHandling(t *testing.T) {
 func Test_exists(t *testing.T) {
 	var (
 		b, _, _ = newBroker(nil)
-		m       = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+		m       = message.New(message.MessageTypeEnum_MetadataCreate, message.MessageClassEnum_Command)
 	)
 	// It should return false because the message was never seen before.
 	if b.exists(m) {
@@ -130,7 +130,7 @@ func Test_exists(t *testing.T) {
 func Test_exists_putFails(t *testing.T) {
 	var (
 		b, _, _ = newBroker(nil)
-		m       = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+		m       = message.New(message.MessageTypeEnum_MetadataCreate, message.MessageClassEnum_Command)
 	)
 	b.repository = &putErrRepo{b.repository}
 	// It should return false because the message was never seen before.
@@ -157,14 +157,14 @@ func TestErrorQueues(t *testing.T) {
 	}{
 		{
 			"Invalid queue",
-			message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand),
+			message.New(message.MessageTypeEnum_MetadataCreate, message.MessageClassEnum_Command),
 			bErrors.GENERR001,
 			"mandatory field `foobar` is missing",
 			b.config.QueueInvalid,
 		},
 		{
 			"Error queue",
-			message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand),
+			message.New(message.MessageTypeEnum_MetadataCreate, message.MessageClassEnum_Command),
 			bErrors.GENERR006,
 			"local repository is not accessible",
 			b.config.QueueError,
@@ -201,7 +201,7 @@ func TestErrorQueues(t *testing.T) {
 func TestMessageRetry(t *testing.T) {
 	var (
 		b, _, backend = newRetryBroker(nil)
-		m             = message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+		m             = message.New(message.MessageTypeEnum_MetadataCreate, message.MessageClassEnum_Command)
 	)
 	b.Request(context.Background(), m)
 

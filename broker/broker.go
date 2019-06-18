@@ -26,8 +26,8 @@ type Broker struct {
 	logger  log.FieldLogger
 	config  *Config
 
-	Metadata   MetadataService
-	Vocabulary VocabularyService
+	Metadata     MetadataService
+	Preservation PreservationService
 
 	repository Repository
 	validator  message.Validator
@@ -47,7 +47,7 @@ type subscription struct {
 	all bool
 
 	// The type of message that this subscriber is listening.
-	mType message.MessageType
+	mType message.MessageTypeEnum
 
 	// The callback associated to this particular subscriber.
 	cb MessageHandler
@@ -76,7 +76,7 @@ func New(backend backend.Backend, logger log.FieldLogger, config *Config) (*Brok
 		b.repository = MustRepository(NewRepository(config.RepositoryConfig))
 	}
 	b.Metadata = &MetadataServiceOp{broker: b}
-	b.Vocabulary = &VocabularyServiceOp{broker: b}
+	b.Preservation = &PreservationServiceOp{broker: b}
 
 	// Set up validator.
 	if err := b.setUpSchemaValidator(); err != nil {
@@ -278,7 +278,7 @@ func (b *Broker) Subscribe(cb MessageHandler) {
 }
 
 // SubscribeType creates a new subscription associated to a particular message type.
-func (b *Broker) SubscribeType(t message.MessageType, cb MessageHandler) {
+func (b *Broker) SubscribeType(t message.MessageTypeEnum, cb MessageHandler) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.subs = append(b.subs, subscription{mType: t, cb: cb})

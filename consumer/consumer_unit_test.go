@@ -36,8 +36,10 @@ func Test_handleMetadataCreateRequest_errMessageType(t *testing.T) {
 }
 func Test_handleMetadataCreateRequest_emptyFiles(t *testing.T) {
 	c, _ := getConsumer(t)
-	msg := message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
-	msg.MessageBody.(*message.MetadataCreateRequest).ObjectUuid = message.MustUUID("a3c982c9-e035-4702-bd97-cef8ab618ad5")
+	msg := message.New(message.MessageTypeEnum_MetadataCreate, message.MessageClassEnum_Command)
+	msg.MessageBody.(*message.MetadataCreateRequest).Article = &message.Article{
+		ObjectUUID: message.MustUUID("a3c982c9-e035-4702-bd97-cef8ab618ad5"),
+	}
 	if err := c.handleMetadataCreateRequest(msg); err != nil {
 		t.Fatalf("Expected nil error, got %s", err)
 	}
@@ -52,8 +54,8 @@ func Test_describeDataset(t *testing.T) {
 				[2]string{"dc.type", "audio"},
 				[2]string{"dc.identifier", "I1"},
 				[2]string{"dc.identifier", "I2"},
-				[2]string{"dcterms.issued", "date of publication"},
-				[2]string{"dc.publicationYear", "date of publication"},
+				[2]string{"dcterms.issued", "2002-10-02 10:00:00 +0000 UTC"},
+				[2]string{"dc.publicationYear", "2002-10-02 10:00:00 +0000 UTC"},
 				[2]string{"dc.publisher", "orgname"},
 				[2]string{"dc.creatorName", "person 2"},
 				[2]string{"dc.publisher", "person 3"},
@@ -68,8 +70,8 @@ func Test_describeDataset(t *testing.T) {
 			message.Identifier{IdentifierValue: "I2"},
 		},
 		ObjectDate: []message.Date{
-			message.Date{DateType: message.DateTypeEnum_published, DateValue: "date of publication"},
-			message.Date{DateType: message.DateTypeEnum_accepted, DateValue: "date of ..."},
+			message.Date{DateType: message.DateTypeEnum_published, DateValue: message.Timestamp(time.Date(2002, time.October, 2, 10, 0, 0, 0, time.UTC))},
+			message.Date{DateType: message.DateTypeEnum_accepted, DateValue: message.Timestamp(time.Date(2002, time.October, 2, 10, 0, 0, 0, time.UTC))},
 		},
 		ObjectOrganisationRole: []message.OrganisationRole{
 			message.OrganisationRole{

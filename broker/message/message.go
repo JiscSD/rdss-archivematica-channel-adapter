@@ -1,5 +1,7 @@
 package message
 
+//go:generate go run generator.go
+
 import (
 	"encoding/json"
 	"reflect"
@@ -26,7 +28,7 @@ type Message struct {
 }
 
 // New returns a pointer to a new message with a new ID.
-func New(t MessageType, c MessageClass) *Message {
+func New(t MessageTypeEnum, c MessageClassEnum) *Message {
 	now := time.Now()
 	return &Message{
 		MessageHeader: MessageHeader{
@@ -100,7 +102,10 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(&messageAlias{json.RawMessage(header), json.RawMessage(body)})
+	return json.Marshal(&messageAlias{
+		MessageHeader: json.RawMessage(header),
+		MessageBody:   json.RawMessage(body),
+	})
 }
 
 // UnmarshalJSON implements Unmarshaler.
@@ -120,29 +125,23 @@ func (m *Message) UnmarshalJSON(data []byte) error {
 
 // typedBody returns an interface{} type where the type of the underlying value
 // is chosen after the header message type.
-func typedBody(t MessageType, correlationID *UUID) interface{} {
+func typedBody(t MessageTypeEnum, correlationID *UUID) interface{} {
 	var body interface{}
 	switch {
-	case t == MessageTypeMetadataCreate:
+	case t == MessageTypeEnum_MetadataCreate:
 		body = new(MetadataCreateRequest)
-	case t == MessageTypeMetadataRead:
+	case t == MessageTypeEnum_MetadataRead:
 		if correlationID == nil {
 			body = new(MetadataReadRequest)
 		} else {
 			body = new(MetadataReadResponse)
 		}
-	case t == MessageTypeMetadataUpdate:
+	case t == MessageTypeEnum_MetadataUpdate:
 		body = new(MetadataUpdateRequest)
-	case t == MessageTypeMetadataDelete:
+	case t == MessageTypeEnum_MetadataDelete:
 		body = new(MetadataDeleteRequest)
-	case t == MessageTypeVocabularyRead:
-		if correlationID == nil {
-			body = new(VocabularyReadRequest)
-		} else {
-			body = new(VocabularyReadResponse)
-		}
-	case t == MessageTypeVocabularyPatch:
-		body = new(VocabularyPatchRequest)
+	case t == MessageTypeEnum_PreservationEvent:
+		body = new(PreservationEventRequest)
 	}
 	return body
 }
