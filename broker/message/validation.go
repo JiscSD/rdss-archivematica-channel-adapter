@@ -9,10 +9,21 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 	"github.com/xeipuuv/gojsonreference"
 	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message/specdata"
+)
+
+// ValidationMode determines the type of message validation performed.
+type ValidationMode int
+
+const (
+	_                                     = iota
+	ValidationModeStrict   ValidationMode = iota // Messages are rejected if invalid, validation issues will be logged.
+	ValidationModeWarnings                       // Messages will not be rejected but the validation issues will be logged.
+	ValidationModeDisabled                       // Message validator is disabled.
 )
 
 func init() {
@@ -33,6 +44,7 @@ type Validator interface {
 // rdssValidator implements Validator. It is the default validation solution for
 // the RDSS API and it depends on its schema files.
 type rdssValidator struct {
+	Mode       ValidationMode
 	validators map[string]*gojsonschema.Schema
 }
 
@@ -88,8 +100,24 @@ func resolveSchemaRef(source string) string {
 }
 
 // NewValidator returns a Validator with all the RDSS API schemas loaded.
-func NewValidator() (Validator, error) {
+func NewValidator(mode string) (Validator, error) {
+	var m ValidationMode
+	switch mode {
+	case "strict":
+		m = ValidationModeStrict
+	case "warnings":
+		m = ValidationModeWarnings
+	case "disabled":
+		m = ValidationModeDisabled
+	default:
+		enabled, err := cast.ToBoolE(mode)
+		if err == nil && !enabled {
+			return &NoOpValidator{}, nil
+		}
+	}
+
 	v := &rdssValidator{
+		Mode:       m,
 		validators: make(map[string]*gojsonschema.Schema),
 	}
 

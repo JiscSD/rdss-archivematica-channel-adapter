@@ -2,321 +2,103 @@
 
 # RDSS Archivematica Channel Adapter
 
-- [Introduction](#introduction)
-- [Usage](#usage)
-  - [Consumer](#consumer)
-  - [Publisher](#publisher)
-- [Configuration](#configuration)
-  - [Environment variables](#environment-variables)
-  - [Configuration file](#configuration-file)
-- [Reusability](#reusability)
-- [Profiling](#profiling)
-- [Diagram](#diagram)
+- [Introduction](#Introduction)
+- [Installation](#Installation)
+- [Configuration](#Configuration)
+  - [Configuration file](#Configuration-file)
+  - [Environment variables](#Environment-variables)
+  - [Service dependencies](#Service-dependencies)
+  - [AWS service client configuration](#AWS-service-client-configuration)
+- [Metrics and runtime profiling data](#Metrics-and-runtime-profiling-data)
 - [Contributing](#Contributing)
 
 ## Introduction
 
-**THIS IS A PROTOTYPE!**
+RDSS Archivematica Channel Adapter is an implementation of a channel adapter for [Archivematica](https://archivematica.org) following the [RDSS messaging API specification](https://github.com/JiscRDSS/rdss-message-api-specification).
 
-This repository holds the source code of the channel adapter that connects Archivematica to [RDSS's messaging API](https://github.com/JiscRDSS/rdss-message-api-specification).
+## Installation
 
-The adapter is written in Go as a standalone application that runs next to Archivematica. Its main role is to abstract the complexities and specifics of the underlying queuing system from its users.
+Download the binary from the [Releases](https://github.com/JiscRDSS/rdss-archivematica-channel-adapter/releases) page. You can use a process manager such [systemd](https://www.linode.com/docs/quick-answers/linux/start-service-at-boot/) to run it.
 
-If you want to build this application from the sources, use Go 1.10 or newer. Our `Dockerfile` uses Go 1.10. Our CI uses `1.x` (latest release available) and `tip` (development branch).
+The following example runs the application using the Docker image.
 
-## Usage
+    $ docker run \
+        --tty --rm \
+        --env "RDSS_ARCHIVEMATICA_ADAPTER_LOGGING.LEVEL=WARNING" \
+        --restart always \
+        artefactual/rdss-archivematica-channel-adapter \
+            server
 
-We're producing a single binary executable file: **rdss-archivematica-channel-adapter** with two subcommands: **consumer** and **publisher**. You can build the Docker image locally running the following command:
-
-    $ docker build -t rdss-archivematica-channel-adapter .
-
-The **consumer** is the component that brings Archivematica functionality to RDSS. It consumes the messages that come from the stream and convert them into Archivematica-specific calls. You can start it running:
-
-    $ docker run rdss-archivematica-channel-adapter consumer
-
-On the other hand,  the **publisher** is the component that brings RDSS functionality to Archivematica. It is implemented as a gRPC server which and it encapsulates the asynchronous nature of the messaging interaction, exposing regular synchronous methods to the application logic or the client. You can start it running:
-
-    $ docker run rdss-archivematica-channel-adapter publisher
-
-Certain configuration parameter are required though. See the configuration section in this document for more details.
+The example above uses the `server` subcommand and passes configuration attributes via the environment.
 
 ## Configuration
 
-The adapter is not configurable via command-line flags. You can choose between environment variables and the configuration file, having the former method precedence over the latter.
+Configuration defaults are included in the source code ([config.go](./app/config.go)). Use it as a reference since it lists all the attributes available including descriptions. We use the [TOML configuration file format](https://en.wikipedia.org/wiki/TOML).
 
-### Environment variables
-
-The following is a list of supported environment variables. They need to be prefixed with the string `RDSS_ARCHIVEMATICA_ADAPTER_`, e.g. `RDSS_ARCHIVEMATICA_ADAPTER_LOGGING.LEVEL=DEBUG`. Notice that the dot is used to separate nested attributes.
-
-:heavy_minus_sign: `LOGGING.LEVEL`
-
-> Default: `"INFO"`
-
-All severity levels defined by [RFC 5424](https://tools.ietf.org/html/rfc5424) are supported.
-
-:heavy_minus_sign: `AMCLIENT.URL`
-
-> Default: `""`
-
-Archivematica API - URL, e.g.: `"https://my.archivematica.internal:9000`.
-
-:heavy_minus_sign: `AMCLIENT.USER`
-
-> Default: `""`
-
-Archivematica API - Username, e.g.:  `"demo"`.
-
-:heavy_minus_sign: `AMCLIENT.KEY`
-
-> Default: `""`
-
-Archivematica API - Key, e.g.: `"eid3Aitheijoo1ohce2pho4eiDei0lah"`.
-
-:heavy_minus_sign: `AMCLIENT.TRANSFER_DIR`
-
-> Default: `""`
-
-The base directory where transfers will be downloaded. It must match the path of the default transfer source location as defined in Archivematica Storage Service. For a development environment, the default is `/home`. Transfers will be downloaded into temporary directories created inside the `TRANSFER_DIR`.
-
-:heavy_minus_sign: `S3.FORCE_PATH_STYLE`
-
-> Default: `false`
-
-When set to `true`, the bucket name is always left in the request URL and never moved to the host as a sub-domain.
-
-:heavy_minus_sign: `S3.INSECURE_SKIP_VERIFY`
-
-> Default: `false`
-
-When set to `true`, the client will skip the TLS verification process.
-
-:heavy_minus_sign: `S3.ENDPOINT`
-
-> Default: `""`
-
-When set to a non-empty string, it's used as the AWS service endpoint, e.g.: `"https://127.0.0.1:4567"`.
-
-:heavy_minus_sign: `S3.ACCESS_KEY`
-
-> Default: `""`
-
-When set to a non-empty string, it's combined with `S3.SECRET_KEY` to set up the static credential object.
-
-:heavy_minus_sign: `S3.SECRET_KEY`
-
-> Default: `""`
-
-When set to a non-empty string, it's combined with `S3.ACCESS_KEY` to set up the static credential object.
-
-:heavy_minus_sign: `S3.REGION`
-
-> Default: `""`
-
-AWS Region. If empty, the AWS SDK will throw an error. E.g.: `eu-west-2`.
-
-:heavy_minus_sign: `CONSUMER.BACKEND`
-
-> Default: `"builtin"`
-
-The default (`"builtin"`) is a simple non-persisted hash in memory. A better alternative that can be shared by multiple consumers is the `dynamodb` backend which uses a single DynamoDB table.
-
-:heavy_minus_sign: `CONSUMER.DYNAMODB_TLS`
-
-> Default: `true`
-
-When set to `true`, the client uses the TLS protocol to communicate securely with the server. If you are using a clone of DynamoDB like dynalite you may prefer to have it disabled.
-
-:heavy_minus_sign: `CONSUMER.DYNAMODB_TABLE`
-
-> Default: `""`
-
-The DynamoDB table name which must conform the [naming rules](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.NamingRules).
-
-:heavy_minus_sign: `CONSUMER.DYNAMODB_ENDPOINT`
-
-> Default: `""`
-
-When set to a non-empty string, it's used as the AWS service endpoint, e.g.: `"http://127.0.0.1:9999"`.
-
-:heavy_minus_sign: `CONSUMER.DYNAMODB_REGION`
-
-> Default: `""`
-
-AWS Region. If empty, the AWS SDK will throw an error. E.g.: `eu-west-2`.
-
-:heavy_minus_sign: `PUBLISHER.LISTEN`
-
-> Default: `"0.0.0.0:8000"`
-
-Address of the gRPC server found in the publisher.
-
-:heavy_minus_sign: `PUBLISHER.TLS`
-
-> Default: `false`
-
-When set to `true`, the gRPC server is built with the TLS integration enabled which is helpful if you want your clients to authenticate the server and encrypt all the data exchanged between the clients and the server.
-
-:heavy_minus_sign: `PUBLISHER.TLS_CERT_FILE`
-
-> Default: `""`
-
-When `PUBLISHER.TLS` is set to `true`, this is used to describe the location of the public key of the X509 key pair. The file must contain PEM encoded data and it may contain intermediate certificates following the leaf certificate to form a certificate chain.
-
-:heavy_minus_sign: `PUBLISHER.TLS_KEY_FILE`
-
-> Default: `""`
-
-When `PUBLISHER.TLS` is set to `true`, this is used to describe the location of the private key of the X509 key pair. The file must contain PEM encoded data.
-
-:heavy_minus_sign: `BROKER.BACKEND`
-
-> Default: `"kinesis"`
-
-The name of the backend used as the RDSS broker. `"kinesis"` is the backend currently supported in addition to "backendmock"`, developed for testing purposes only.
-
-:heavy_minus_sign: `BROKER.VALIDATION`
-
-> Default: `true`
-
-The adapter implements a message validator that uses the canonical RDSS JSON Schema documents. The validator can be configured in the following ways:
-
-- When set to `true`, the adapter will reject invalid messages and the validation issues will be logged with `DEBUG` level.
-- When set to `warnings`, the adapter will not reject invalid messages but the validation issues will be logged with `DEBUG` level.
-- When set to `false`, message validation will not be performed.
-
-:heavy_minus_sign: `BROKER.QUEUES.MAIN`
-
-> Default: `"main"`
-
-Name of the main message queue.
-
-:heavy_minus_sign: `BROKER.QUEUES.INVALID`
-
-> Default: `"invalid"`
-
-Name of the invalid message queue.
-
-:heavy_minus_sign: `BROKER.QUEUES.ERROR`
-
-> Default: `"error"`
-
-Name of the error message queue.
-
-:heavy_minus_sign: `BROKER.REPOSITORY.BACKEND`
-
-> Default: `"builtin"`
-
-The [Local Data Repository](https://github.com/JiscRDSS/rdss-message-api-specification#local-data-repository) backend. The default (`"builtin"`) is a simple non-persisted hash in memory. A better alternative that can be shared by multiple consumers is the `dynamodb` backend which uses a single DynamoDB table.
-
-:heavy_minus_sign: `BROKER.REPOSITORY.DYNAMODB_TLS`
-
-> Default: `true`
-
-When set to `true`, the client uses the TLS protocol to communicate securely with the server. If you are using a clone of DynamoDB like dynalite you may prefer to have it disabled.
-
-:heavy_minus_sign: `BROKER.REPOSITORY.DYNAMODB_TABLE`
-
-> Default: `""`
-
-The DynamoDB table name which must conform the [naming rules](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.NamingRules).
-
-:heavy_minus_sign: `BROKER.REPOSITORY.DYNAMODB_ENDPOINT`
-
-> Default: `""`
-
-When set to a non-empty string, it's used as the AWS service endpoint, e.g.: `"http://127.0.0.1:9999"`.
-
-:heavy_minus_sign: `BROKER.REPOSITORY.DYNAMODB_REGION`
-
-> Default: `""`
-
-AWS Region. If empty, the AWS SDK will throw an error. E.g.: `eu-west-2`.
-
-:heavy_minus_sign: `BROKER.KINESIS.APP_NAME`
-
-> Default: `"rdss_am"`
-
-This is used to prefix the names of the DynamoDB tables used to share state across multiple consumers. If you are setting up more than one consumer remember to define the same value in all of them.
-
-:heavy_minus_sign: `BROKER.KINESIS.REGION`
-
-> Default: `""`
-
-AWS Region. If empty, the AWS SDK will throw an error. E.g.: `eu-west-2`.
-
-:heavy_minus_sign: `BROKER.KINESIS.TLS`
-
-> Default: `true`
-
-When set to `true`, the client uses the TLS protocol to communicate securely with the server. If you are using a clone of DynamoDB like dynalite you may prefer to have it disabled.
-
-:heavy_minus_sign: `BROKER.KINESIS.ENDPOINT`
-
-> Default: `""`
-
-When set to a non-empty string, it's used as the AWS service endpoint, e.g.: `"http://127.0.0.1:4567"`.
-
-:heavy_minus_sign: `BROKER.KINESIS.ROLE_ARN`
-
-> Default: `""`
-
-When set to a non-empty string, it's used as the IAM role that the Kinesis client assumes using STS.
-
-:heavy_minus_sign: `BROKER.KINESIS.ROLE_EXTERNAL_ID`
-
-> Default: `""`
-
-Optional `ExternalID` to pass along `ROLE_ARN`.
-
-:heavy_minus_sign: `BROKER.KINESIS.TLS_DYNAMODB`
-
-> Default: `true`
-
-When set to `true`, the client uses the TLS protocol to communicate securely with the server. If you are using a clone of DynamoDB like dynalite you may prefer to have it disabled.
-
-:heavy_minus_sign: `BROKER.KINESIS.ENDPOINT_DYNAMODB`
-
-> Default: `""`
-
-When set to a non-empty string, it's used as the AWS service endpoint, e.g.: `"http://127.0.0.1:9999"`.
-
+Inject custom configuration attributes via a configuration file and/or environment variables.
 
 ### Configuration file
 
-The adapter will try to read config in [TOML format](https://en.wikipedia.org/wiki/TOML) from `$HOME/.rdss-archivematica-channel-adapter.toml` and `/etc/archivematica/rdss-archivematica-channel-adapter.toml`. Alternatively, you can pass a different location with the global `--config string` flag.
+The configuration file can be indicated via the `--config` command-line argument. When undefined, the application attempts to read from one of the following locations:
 
-Notice how the environment variables in the previous section map to the nested configuration sections in the configuration file, e.g.:
+- `$HOME/.rdss-archivematica-channel-adapter.toml`
+- `/etc/archivematica/rdss-archivematica-channel-adapter.toml`
 
-```toml
-[logging]
-level = "INFO"
+### Environment variables
 
-[amclient]
-url = "http://dadada"
-user = "demo"
-key = "12345"
-```
+Configuration from environment variables have precedence over file-based configuration. All environment variables follow the same naming scheme: `RDSS_ARCHIVEMATICA_ADAPTER_<SECTION>_<ATTRIBUTE>=<VALUE>`. Some valid examples are:
 
-## Code reusability
+- `RDSS_ARCHIVEMATICA_ADAPTER_LOGGING.LEVEL=DEBUG`<br />
+  (section: `LOGGING`, attribute: `LEVEL`, value: `DEBUG`)
+- `RDSS_ARCHIVEMATICA_ADAPTER_MESSAGE.VALIDATION=FALSE`<br />
+  (section: `MESSAGE`, attribute: `VALIDATION`, value: `FALSE`)
 
-A few Go packages found in this repository are agnostic to Archivematica and could be used by other vendors:
+### Service dependencies
 
-- `github.com/JiscRDSS/rdss-archivematica-channel-adapter/amclient` is an Archivematica HTTP API client.
-- `github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker` is a RDSS client conforming to the RDSS messaging API. Both `consumer` and `publisher` packages in this repository are use cases. If you want to know more, there is a comprehensive example in [broker_test.go](broker/broker_test.go).
-- `github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3` is a small S3 wrapper used to download files.
+This application sits between multiple services and assumes access to the following resources and actions:
 
-## Profiling
+| Resource      | API action                            | Configuration                                                                                                                                                     |
+|---------------|---------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| AWS SQS       | sqs:ReceiveMessage                    | adapter.queue_recv_main_addr<br/>aws.sqs_profile (optional)<br/>aws.sqs_endpoint (optional)                                                                       |
+| AWS SNS       | sns:Publish                           | adapter.queue_send_main_addr<br/>adapter.queue_send_invalid_addr<br/>adapter.queue_send_error_addr<br/>aws.sns_profile (optional)<br/>aws.sns_endpoint (optional) |
+| AWS DynamoDB  | dynamodb:GetItem<br/>dynamodb:PutItem | adapter.processing_table<br/>adapter.repository_table<br/>aws.dynamodb_profile (optional)<br/>aws.dynamodb_endpoint (optional)                                    |
+| AWS S3        | s3:GetObject                          | adapter.s3_profile<br/>adapter.s3_endpoint<br/><small>*(only needed when preservation requests point to S3 buckets.)*</small>
+| Archivematica | N/A                                   | amclient.url<br/>amclient.user<br/>amclient.key<br/>amclient.transfer_dir                                                                                         |
 
-Both `consumer` and `publisher` serve Go runtime profiling data in the format expected by the `pprof` visualization tool - they listen on `0.0.0.0:6060`. Learn how to use the [tool](https://golang.org/pkg/net/http/pprof/).
+### AWS service client configuration
 
-## Diagram
+The AWS service client configuration rely on the [shared configuration functionality](https://docs.aws.amazon.com/sdk-for-go/api/aws/session/) which is similar to the [AWS CLI configuration system](https://docs.aws.amazon.com/cli/latest/topic/config-vars.html).
 
-![RDSS Archivematica Channel Adapter Diagram](hack/diagram.png)
+Additionally, you can override the configuration profile on each client as well as the endpoint using the following environment strings:
+
+- `RDSS_ARCHIVEMATICA_ADAPTER_AWS.S3_PROFILE`
+- `RDSS_ARCHIVEMATICA_ADAPTER_AWS.S3_ENDPOINT`
+- `RDSS_ARCHIVEMATICA_ADAPTER_AWS.DYNAMODB_PROFILE`
+- `RDSS_ARCHIVEMATICA_ADAPTER_AWS.DYNAMODB_ENDPOINT`
+- `RDSS_ARCHIVEMATICA_ADAPTER_AWS.SQS_PROFILE`
+- `RDSS_ARCHIVEMATICA_ADAPTER_AWS.SQS_ENDPOINT`
+- `RDSS_ARCHIVEMATICA_ADAPTER_AWS.SNS_PROFILE`
+- `RDSS_ARCHIVEMATICA_ADAPTER_AWS.SNS_ENDPOINT`
+
+This can be useful under a variety of scenarios:
+
+- Deployment of alternative services like LocalStack, Minio, etc...
+- Applying different credentials, e.g. assuming a IAM role in the SQS/SNS clients.
+
+## Metrics and runtime profiling data
+
+`rdss-archivematica-channel-adapter server` runs a HTTP server that listens on `0.0.0.0:6060` with two purposes:
+
+* `/metrics` serves metrics of the Go runtime and the application meant to be scraped by a Prometheus server.
+* `/debug/pprof` serves runtime profiling data in the format expected by the pprof visualization tool. Visit [net/http/pprof docs](https:/golang.org/pkg/net/http/pprof/) for more.
 
 ## Contributing
 
 * See [CONTRIBUTING.md][1] for information about setting up your environment and the workflow that we expect.
 * Check out the [open issues][2].
 
+Also, the [broker][3] package can be used to implement your own RDSS adapter using the Go programming language. The linked docs include documentation and examples. The API stability is not guaranteed.
+
 [1]: /CONTRIBUTING.md
 [2]: https://github.com/JiscRDSS/rdss-archivematica-channel-adapter/issues
+[3]: https://godoc.org/github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker
