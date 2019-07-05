@@ -12,6 +12,7 @@
 - [Reusability](#reusability)
 - [Profiling](#profiling)
 - [Diagram](#diagram)
+- [Contributing](#Contributing)
 
 ## Introduction
 
@@ -311,3 +312,11 @@ Both `consumer` and `publisher` serve Go runtime profiling data in the format ex
 ## Diagram
 
 ![RDSS Archivematica Channel Adapter Diagram](hack/diagram.png)
+
+## Contributing
+
+* See [CONTRIBUTING.md][1] for information about setting up your environment and the workflow that we expect.
+* Check out the [open issues][2].
+
+[1]: /CONTRIBUTING.md
+[2]: https://github.com/JiscRDSS/rdss-archivematica-channel-adapter/issues
