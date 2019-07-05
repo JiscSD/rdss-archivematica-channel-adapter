@@ -1,109 +1,89 @@
 package broker
 
 import (
-	"errors"
-	"sync"
-
+	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/pkg/errors"
 )
 
-var ErrInvalidRepositoryConfig = errors.New("invalid repository configuration")
-
-// RepositoryMessage is a minifed version of message.Message meant to be stored
+// repositoryMessage is a minifed version of message.Message meant to be stored
 // in the local data repository as specified in the RDSS API docs.
-type RepositoryMessage struct {
-	MessageId    string                 `dynamodbav:"ID"`
+type repositoryMessage struct {
+	MessageID    string                 `dynamodbav:"ID"`
 	MessageClass string                 `dynamodbav:"messageClass"`
 	MessageType  string                 `dynamodbav:"messageType"`
 	Sequence     string                 `dynamodbav:"sequence"`
 	Position     int                    `dynamodbav:"position"`
-	Status       RepositoryMessageState `dynamodbav:"status"`
+	Status       repositoryMessageState `dynamodbav:"status"`
 }
 
-type RepositoryMessageState int
+type repositoryMessageState int
 
 const (
-	_                              RepositoryMessageState = iota
-	RepositoryMessageStateReceived RepositoryMessageState = iota
-	RepositoryMessageStateSent
-	RepositoryMessageStateToSend
+	_                              repositoryMessageState = iota
+	repositoryMessageStateReceived repositoryMessageState = iota
+	repositoryMessageStateSent
+	repositoryMessageStateToSend
 )
 
-func (s RepositoryMessageState) String() string {
+func (s repositoryMessageState) String() string {
 	switch s {
-	case RepositoryMessageStateReceived:
+	case repositoryMessageStateReceived:
 		return "RECEIVED"
-	case RepositoryMessageStateSent:
+	case repositoryMessageStateSent:
 		return "SENT"
-	case RepositoryMessageStateToSend:
+	case repositoryMessageStateToSend:
 		return "TO_SEND"
 	default:
 		return "UNKNOWN"
 	}
 }
 
-type Repository interface {
-	Get(ID string) *RepositoryMessage
-	Put(*message.Message) error
+type repository struct {
+	client dynamodbiface.DynamoDBAPI
+	table  string
 }
 
-func NewRepository(config *RepositoryConfig) (Repository, error) {
-	if config.Backend == "dynamodb" {
-		return &RepositoryDynamoDBImpl{
-			DynamoDB: getDynamoDBInstance(config),
-			Table:    config.DynamoDBTable,
-		}, nil
-	} else if config.Backend == "builtin" {
-		return &RepositoryBuiltinImpl{msgs: make(map[string]*RepositoryMessage)}, nil
-	}
-	return nil, ErrInvalidRepositoryConfig
-}
-
-// MustRepository is a helper that wraps a call to a function returning
-// (Repository, error) and panics if the error is non-nil. It is intended for
-// use in variable initializations such as
-//	var t = template.Must(template.New("name").Parse("text"))
-func MustRepository(r Repository, err error) Repository {
+// seenBeforeOrStore decides whether a message is known to this repository.
+func (r *repository) seenBeforeOrStore(m *message.Message) (bool, error) {
+	item, err := r.getRecord(m.ID())
 	if err != nil {
-		panic(err)
+		return false, err
 	}
-	return r
+	if item != nil {
+		return true, nil
+	}
+	if err := r.putRecord(m); err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
-// RepositoryDynamoDBImpl implements Repository.
-type RepositoryDynamoDBImpl struct {
-	DynamoDB dynamodbiface.DynamoDBAPI
-	Table    string
-}
-
-var _ Repository = (*RepositoryDynamoDBImpl)(nil)
-
-func (r *RepositoryDynamoDBImpl) Get(ID string) *RepositoryMessage {
-	var input = &dynamodb.GetItemInput{
-		TableName: aws.String(r.Table),
+func (r *repository) getRecord(ID string) (*repositoryMessage, error) {
+	output, err := r.client.GetItem(&dynamodb.GetItemInput{
+		TableName: aws.String(r.table),
 		Key: map[string]*dynamodb.AttributeValue{
 			"ID": {S: aws.String(ID)},
 		},
+	})
+	if err != nil {
+		return nil, err
 	}
-	output, err := r.DynamoDB.GetItem(input)
-	if err != nil || output.Item == nil {
-		return nil
+	if output.Item == nil {
+		return nil, nil
 	}
-	msg := &RepositoryMessage{}
+	msg := &repositoryMessage{}
 	if err := dynamodbattribute.UnmarshalMap(output.Item, msg); err != nil {
-		return nil
+		return nil, err
 	}
-	return msg
+	return msg, nil
 }
 
-func (r *RepositoryDynamoDBImpl) Put(msg *message.Message) error {
-	rMsg, err := toRepoMessage(msg)
+func (r *repository) putRecord(m *message.Message) error {
+	rMsg, err := toRepoMessage(m)
 	if err != nil {
 		return err
 	}
@@ -112,59 +92,18 @@ func (r *RepositoryDynamoDBImpl) Put(msg *message.Message) error {
 		return err
 	}
 	input := &dynamodb.PutItemInput{
-		TableName: aws.String(r.Table),
+		TableName: aws.String(r.table),
 		Item:      item,
 	}
-	_, err = r.DynamoDB.PutItem(input)
+	_, err = r.client.PutItem(input)
 	return err
 }
 
-func getDynamoDBInstance(config *RepositoryConfig) dynamodbiface.DynamoDBAPI {
-	awsCfg := aws.NewConfig()
-	if config.DynamoDBRegion != "" {
-		awsCfg = awsCfg.WithRegion(config.DynamoDBRegion)
-	}
-	if config.DynamoDBEndpoint != "" {
-		awsCfg = awsCfg.WithEndpoint(config.DynamoDBEndpoint)
-	}
-	awsCfg.DisableSSL = aws.Bool(!config.DynamoDBTLS)
-
-	return dynamodb.New(session.Must(session.NewSession(awsCfg)))
-}
-
-func toRepoMessage(msg *message.Message) (*RepositoryMessage, error) {
-	if msg == nil {
+func toRepoMessage(m *message.Message) (*repositoryMessage, error) {
+	if m == nil {
 		return nil, errors.New("message is nil")
 	}
-	rMsg := &RepositoryMessage{}
-	rMsg.MessageId = msg.ID()
+	rMsg := &repositoryMessage{}
+	rMsg.MessageID = m.ID()
 	return rMsg, nil
-}
-
-// RepositoryInMemoryImpl is a memory-based Repository.
-type RepositoryBuiltinImpl struct {
-	msgs map[string]*RepositoryMessage
-	sync.RWMutex
-}
-
-var _ Repository = (*RepositoryBuiltinImpl)(nil)
-
-func (r *RepositoryBuiltinImpl) Get(ID string) *RepositoryMessage {
-	r.RLock()
-	defer r.RUnlock()
-	if rMsg, ok := r.msgs[ID]; ok {
-		return rMsg
-	}
-	return nil
-}
-
-func (r *RepositoryBuiltinImpl) Put(msg *message.Message) error {
-	r.Lock()
-	defer r.Unlock()
-	rMsg, err := toRepoMessage(msg)
-	if err != nil {
-		return err
-	}
-	r.msgs[msg.ID()] = rMsg
-	return nil
 }
