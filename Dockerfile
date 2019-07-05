@@ -1,15 +1,20 @@
-FROM golang:1.10.3-alpine3.8
-WORKDIR /go/src/github.com/JiscRDSS/rdss-archivematica-channel-adapter
+FROM golang:1.12.6-alpine3.10 as base
+WORKDIR /src
+COPY go.mod .
+COPY go.sum .
+RUN apk add --no-cache --virtual ca-certificates git make gcc musl-dev
+RUN go mod download
+
+FROM base AS builder
 COPY . .
-# Don't use `make testrace`, it won't work in Alpine Linux!
-RUN set -x \
-	&& apk add --no-cache ca-certificates \
-	&& apk add --no-cache --virtual .build-deps make gcc musl-dev git \
-	&& make test vet \
-	&& make install
-RUN set -x \
-	&& addgroup -g 333 -S archivematica \
-	&& adduser -u 333 -h /var/lib/archivematica -S -G archivematica archivematica
+RUN make test vet
+RUN make build
+
+FROM alpine:3.10
+WORKDIR /var/lib/archivematica
+COPY --from=builder /src/rdss-archivematica-channel-adapter .
+RUN apk --no-cache add ca-certificates
+RUN addgroup -g 333 -S archivematica && adduser -u 333 -h /var/lib/archivematica -S -G archivematica archivematica
 USER archivematica
-ENTRYPOINT ["/go/bin/rdss-archivematica-channel-adapter"]
+ENTRYPOINT ["/var/lib/archivematica/rdss-archivematica-channel-adapter"]
 CMD ["help"]
