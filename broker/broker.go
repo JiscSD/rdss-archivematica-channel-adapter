@@ -1,296 +1,309 @@
-// Package broker implements a low-level interface for communicating with RDSS
-// via message brokers such Amazon Kinesis Stream or RabbitMQ.
-//
-// The goal of this package is to be reusable by any user. It's not coupled to
-// Archivematica.
 package broker
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"sync"
-	"sync/atomic"
+	"time"
 
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/backend"
 	bErrors "github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/errors"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go/service/sns/snsiface"
+	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
-// Broker is a broker client conforming to the RDSS messaging API.
+const (
+	// maxNumberOfMessages is the number of messages that we want to receive
+	// from SQS incoming batches.
+	maxNumberOfMessages = 1
+
+	// waitTimeSeconds is the longest we're waiting on each SQS receive poll.
+	waitTimeSeconds = 1
+)
+
+// Broker is a RDSS client using the SQS and SNS services.
+//
+// Messages are received from sqsQueueMainURL and sent to an interna channel
+// (messages). The channel is unbuffered so the receiver controls how often we
+// are going to receive from SQS. However, the current processor is unbounded,
+// i.e. processMessage is launched on a new goroutine for each message received.
+//
+// The message processor will:
+//
+// * Extract, unmarshal and validate the message payload.
+//
+// * Reject messages that have been received before.
+//
+// * Run the designated handler and capture the returned error.
+//
+// In case of errors, messages are sent to the {Invalid,Error} Message Queue
+// according to the behaviour described in the RDSS API specification.
+//
+// Messages are deleted from SQS as soon as they're processed. This includes
+// cases where the processing have failed, e.g. validation or handler error.
+// The visibility timeout is set by the SQS queue owner under the assumption
+// that the underlying preservation system is capable to process the requests
+// within the window given (the maximum is 12 hours).
+//
+// Potential improvements:
+//
+// * Create a limited number of processors to avoid bursting.
+//
+// * Increase throughput: sqs.DeleteMessageBatch, multiple consumers, etc...
+//   Low priority since we don't expect many messages.
+//
+// * Handlers could take a long time to complete. Do we need cancellation?
+//   What are we doing when we exceed the visibility timeout? Is the adapter
+//   accountable?
+//
 type Broker struct {
-	backend backend.Backend
-	logger  log.FieldLogger
-	config  *Config
-
-	Metadata     MetadataService
-	Preservation PreservationService
-
-	repository Repository
-	validator  message.Validator
-
-	// Number of messages received.
-	count uint64
-
-	// List of subscribers
-	subs []subscription
-	mu   sync.RWMutex
+	logger             logrus.FieldLogger
+	sqsClient          sqsiface.SQSAPI
+	sqsQueueMainURL    string
+	snsClient          snsiface.SNSAPI
+	snsTopicMainARN    string
+	snsTopicInvalidARN string
+	snsTopicErrorARN   string
+	dynamodbClient     dynamodbiface.DynamoDBAPI
+	dynamodbTable      string
+	validator          message.Validator
+	ctx                context.Context
+	cancel             context.CancelFunc
+	messages           chan *sqs.Message
+	stop               chan chan struct{}
+	Metadata           MetadataService
+	Preservation       PreservationService
+	incomingMessages   prometheus.Counter
+	subscriptions
+	repository
 }
 
-// subscription is a subscription with a handler to a particular topic. If the
-// value of all is true then the handler will be invoked for every message.
-type subscription struct {
-	// Whether the subscriber wants to be subscribed to receive every message.
-	all bool
-
-	// The type of message that this subscriber is listening.
-	mType message.MessageTypeEnum
-
-	// The callback associated to this particular subscriber.
-	cb MessageHandler
-}
-
-// MessageHandler is a callback function supplied by subscribers.
-type MessageHandler func(msg *message.Message) error
-
-// New returns a new Broker.
-func New(backend backend.Backend, logger log.FieldLogger, config *Config) (*Broker, error) {
-	if logger == nil {
-		logger = log.New()
-	}
-
-	// Validate configuration
-	if err := config.Validate(); err != nil {
-		return nil, fmt.Errorf("Configuration error: %s", err)
-	}
-
+// New returns a usable Broker.
+func New(
+	logger logrus.FieldLogger,
+	sqsClient sqsiface.SQSAPI, sqsQueueMainURL string,
+	snsClient snsiface.SNSAPI, snsTopicMainARN, snsTopicInvalidARN, snsTopicErrorARN string,
+	dynamodbClient dynamodbiface.DynamoDBAPI, dynamodbTable string,
+	validationMode string,
+	incomingMessages prometheus.Counter) (*Broker, error) {
 	b := &Broker{
-		backend: backend,
-		logger:  logger,
-		config:  config,
+		logger:             logger,
+		sqsClient:          sqsClient,
+		sqsQueueMainURL:    sqsQueueMainURL,
+		snsTopicMainARN:    snsTopicMainARN,
+		snsTopicInvalidARN: snsTopicInvalidARN,
+		snsTopicErrorARN:   snsTopicErrorARN,
+		snsClient:          snsClient,
+		messages:           make(chan *sqs.Message),
+		stop:               make(chan chan struct{}),
+		incomingMessages:   incomingMessages,
+		repository:         repository{client: dynamodbClient, table: dynamodbTable},
 	}
-	if config.RepositoryConfig != nil {
-		b.repository = MustRepository(NewRepository(config.RepositoryConfig))
-	}
+	b.ctx, b.cancel = context.WithCancel(context.Background())
+	b.subscriptions.s = make(map[message.MessageTypeEnum]MessageHandler)
 	b.Metadata = &MetadataServiceOp{broker: b}
 	b.Preservation = &PreservationServiceOp{broker: b}
 
-	// Set up validator.
-	if err := b.setUpSchemaValidator(); err != nil {
-		return nil, err
+	var err error
+	b.validator, err = message.NewValidator(validationMode)
+	if err != nil {
+		return nil, errors.Wrap(err, "validator setup failed")
 	}
 
-	// Check queues
-	if err := b.checkQueues(); err != nil {
-		return nil, err
-	}
+	go b.processor()
 
-	// Set up message router
-	b.backend.Subscribe(config.QueueMain, b.messageHandler)
 	return b, nil
 }
 
-// messageHandler implents backend.Handler. It runs in a separate goroutine.
-func (b *Broker) messageHandler(data []byte) error {
-	msg := &message.Message{}
-	err := json.Unmarshal(data, msg)
-	if err != nil {
-		b.queueInvalidMessage(data, bErrors.NewWithError(bErrors.GENERR001, err))
-		return nil
+// Run starts the processing.
+func (b *Broker) Run() {
+	b.loop()
+}
+
+// processor launches a processing goroutine for each message received.
+func (b *Broker) processor() {
+	for m := range b.messages {
+		go b.processMessage(m)
 	}
+}
 
-	// Validate the message. Send to the invalid queue if it didn not validate.
-	if err := b.validateMessage(msg); err != nil {
-		b.queueInvalidMessage(data, bErrors.NewWithError(bErrors.GENERR001, err))
-		return nil
-	}
-
-	// Check that the message has not been received yet.
-	if b.exists(msg) {
-		b.logger.Debugf("Message discarded (already seen): %s", msg.ID())
-		return nil
-	}
-
-	atomic.AddUint64(&b.count, 1)
-	b.logger.WithFields(log.Fields{"count": b.Count(), "type": msg.MessageHeader.MessageType}).Infoln("Message received")
-
-	// Dispatch the message to its subscribers in parallel. Block until they're
-	// all done and handle
-	var (
-		wg       sync.WaitGroup
-		appError error
-	)
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	for _, s := range b.subs {
-		if !s.all && msg.MessageHeader.MessageType != s.mType {
-			continue
-		}
-		// Here is our goroutine that is going to dispatch the message to each
-		// subscriber.
-		wg.Add(1)
-		go func(s subscription) {
-			defer wg.Done()
-			// We want to regain control of a panicking goroutine if that was
-			// the case. The idea is not to let the application crash if the
-			// user making use of this package implemented a faulty handler.
-			defer func() {
-				if r := recover(); r != nil {
-					err = fmt.Errorf("recovered from panic in subscriber: %s", err)
+// loop sends messages received from sqsQueueMainURL to the internal messages
+// channel which is unbuffered so the receiver has control over how often we
+// receive.
+func (b *Broker) loop() {
+	for {
+		select {
+		case ch := <-b.stop:
+			b.cancel()
+			close(b.messages)
+			close(ch)
+			return
+		default:
+			out, err := b.sqsClient.ReceiveMessageWithContext(b.ctx, &sqs.ReceiveMessageInput{
+				QueueUrl:            aws.String(b.sqsQueueMainURL),
+				MaxNumberOfMessages: aws.Int64(maxNumberOfMessages),
+				WaitTimeSeconds:     aws.Int64(waitTimeSeconds),
+			})
+			if err != nil {
+				b.logger.Errorf("Error receiving a message from SQS: %s", err)
+				time.Sleep(1 * time.Second)
+			} else {
+				for _, m := range out.Messages {
+					b.messages <- m
 				}
-			}()
-			if handlerErr := s.cb(msg); handlerErr != nil {
-				appError = handlerErr
 			}
-		}(s)
+		}
+	}
+}
+
+func (b *Broker) processMessage(m *sqs.Message) {
+	b.incomingMessages.Inc()
+
+	// Payload unmarshal.
+	msg := &message.Message{}
+	err := json.Unmarshal([]byte(*m.Body), msg)
+	if err != nil {
+		b.invalidMessage(m, bErrors.NewWithError(bErrors.GENERR001, err))
+		return
 	}
 
-	// Wait until all the goroutines are done
+	// Payload validation.
+	if err := b.validate(msg); err != nil {
+		b.invalidMessage(m, bErrors.NewWithError(bErrors.GENERR001, err))
+		return
+	}
+
+	logger := b.logger.WithFields(logrus.Fields{
+		"messageID": msg.ID(),
+		"type":      msg.MessageHeader.MessageType.String(),
+		"class":     msg.MessageHeader.MessageClass.String(),
+	})
+
+	// Do nothing if the message has been seen before.
+	// Best effort, i.e. we continue on errors checking the local repo repo.
+	seen, err := b.seenBeforeOrStore(msg)
+	if err != nil {
+		logger.Error("Local data repository check failed: ", err)
+	} else if seen {
+		logger.Warning("Message found in the local data repository.")
+		b.deleteMessage(m.ReceiptHandle)
+		return
+	}
+
+	// Run the handler in panic recovery mode.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("handler goroutine panic! %s %s", r, debug.Stack())
+			}
+		}()
+		err = b.handleMessage(msg)
+	}()
 	wg.Wait()
 
-	if appError != nil {
-		b.queueErrorMessage(msg, appError)
+	if err != nil {
+		logger.Error("Handler failure: ", err)
+		b.errorMessage(msg, bErrors.NewWithError(bErrors.GENERR006, err), m.ReceiptHandle)
+		return
 	}
 
+	b.deleteMessage(m.ReceiptHandle)
+}
+
+// deleteMessage does best effort to delete a message from SQS. It does not
+// return since we're not reacting to them at the moment.
+func (b *Broker) deleteMessage(receiptHandle *string) {
+	_, err := b.sqsClient.DeleteMessageWithContext(b.ctx, &sqs.DeleteMessageInput{
+		QueueUrl:      aws.String(b.sqsQueueMainURL),
+		ReceiptHandle: receiptHandle,
+	})
+	if err != nil {
+		b.logger.Error("Message could not be removed from SQS: ", err)
+	}
+}
+
+// publishMessage puts a message into a SNS topic.
+func (b *Broker) publishMessage(topicARN string, payload string) error {
+	_, err := b.snsClient.PublishWithContext(b.ctx, &sns.PublishInput{
+		Message:  aws.String(payload),
+		TopicArn: aws.String(topicARN),
+	})
 	return err
 }
 
-// setUpSchemaValidator sets up the JSON Schema validator.
-func (b *Broker) setUpSchemaValidator() (err error) {
-	if b.config.Validation == ValidationModeDisabled {
-		b.validator = &message.NoOpValidator{}
-		b.logger.Warningf("JSON Schema validator is disabled.")
-		return nil
-	}
-	if b.validator, err = message.NewValidator(); err != nil {
-		return err
-	}
-	b.logger.Infoln("JSON Schema validator installed successfully.")
-	for mtype := range b.validator.Validators() {
-		b.logger.Debugf("JSON Schema for message type %s installed.", mtype)
-	}
-	return err
-}
-
-// validateMessage returns an error if the message does not validate against
-// its schema.
-func (b *Broker) validateMessage(msg *message.Message) error {
+// validate returns whether the message is valid according to the spec.
+// The error returned is nil when the validator use is NoOpValidator.
+// The logging events sent in this method are documented, don't change them!
+func (b *Broker) validate(msg *message.Message) error {
 	res, err := b.validator.Validate(msg)
 	if err != nil {
-		return errors.Wrap(err, "validator failed")
+		return errors.Wrap(err, "validation failed")
 	}
 	if res.Valid() {
 		return nil
 	}
 	message.ValidateVersion(msg.MessageHeader.Version, res)
-	// Validate
-	count := len(res.Errors())
-	b.logger.Debugf("JSON Schema validator found %d issues in %s.", count, msg.ID())
-	for _, re := range res.Errors() {
-		b.logger.WithFields(log.Fields{"messageId": msg.ID()}).Debugf("- %s", re.Description())
+
+	var (
+		logger  = b.logger.WithField("messageID", msg.ID())
+		valErrs = res.Errors()
+		count   = len(valErrs)
+	)
+	logger.Debugf("JSON Schema validator found %d issues.", count)
+	for _, re := range valErrs {
+		logger.Debugf("- %s", re.Description())
 	}
-	if b.config.Validation != ValidationModeStrict {
+	if _, ok := b.validator.(*message.NoOpValidator); ok {
 		return nil
 	}
 	return fmt.Errorf("message has unexpected format, %d errors found", count)
 }
 
-// exists returns whether the message is already in the repository. As a side
-// effect, the message is cached in the repo when it wasn't there so the second
-// time this function is called for the same message the returned value should
-// be true.
-func (b *Broker) exists(msg *message.Message) bool {
-	if item := b.repository.Get(msg.ID()); item != nil {
-		return true
+// invalidMessage puts a message into the Invalid Message Queue.
+func (b *Broker) invalidMessage(m *sqs.Message, specErr error) {
+	defer b.deleteMessage(m.ReceiptHandle)
+	if err := b.publishMessage(b.snsTopicInvalidARN, *m.Body); err != nil {
+		b.logger.Error("A message could not be sent to the Invalid Message Queue: ", err)
 	}
-	if err := b.repository.Put(msg); err != nil {
-		b.logger.Error("Error trying to put the message in the local repository:", msg.ID())
-	}
-	return false
+	b.logger.Debug("Message sent to the invalid message queue")
 }
 
-// checkQueues verifies access and availability of the queues being used.
-func (b *Broker) checkQueues() (err error) {
-	queues := []string{b.config.QueueMain, b.config.QueueError, b.config.QueueInvalid}
-	for _, queue := range queues {
-		if err = b.backend.Check(queue); err != nil {
-			return err
-		}
-	}
-	return
-}
-
-// handleErrMessage places a message on the Error Message Queue or the Invalid
-// Message Queue. The message is tagged with error headers before published.
-func (b *Broker) handleErrMessage(in interface{}, e error, queue string) {
-	if queue == "" {
+// errorMessage puts a message into the Error Message Queue.
+func (b *Broker) errorMessage(msg *message.Message, specErr error, receiptHandle *string) {
+	defer b.deleteMessage(receiptHandle)
+	msg.TagError(specErr)
+	logger := b.logger.WithFields(logrus.Fields{"id": msg.ID(), "specErr": specErr})
+	data, err := json.Marshal(msg)
+	if err != nil {
+		logger.Error("A message could not be marshalled before sending to the Error Message Queue: ", err)
 		return
 	}
-
-	logf := b.logger.WithFields(log.Fields{"messageId": "unknown", "target": queue, "err": e.Error()})
-	bErr, ok := e.(*bErrors.Error)
-	if ok {
-		logf = logf.WithFields(log.Fields{"code": bErr.Kind, "err": bErr.Err.Error()})
+	if err = b.publishMessage(b.snsTopicErrorARN, string(data)); err != nil {
+		logger.Error("A message could not be sent to the Error Message Queue: ", err)
 	}
-
-	var (
-		data []byte
-		err  error
-	)
-	switch msg := in.(type) {
-	case *message.Message:
-		logf = logf.WithFields(log.Fields{"messageId": msg.ID()})
-		msg.TagError(bErr)
-		data, err = msg.MarshalJSON()
-		if err != nil {
-			logf.Error("Error encoding message:", err)
-			return
-		}
-	case []byte:
-		data = msg
-	default:
-		logf.Error("Message ignored because its type is not recognized")
-		return
-	}
-
-	logf.Warnf("A message is being placed on the Error Message Queue (%s)", queue)
-	if err = b.backend.Publish(queue, data); err != nil {
-		logf.Error("The message could not be published: ", err)
-	}
-}
-
-func (b *Broker) queueInvalidMessage(in interface{}, bErr error) {
-	b.handleErrMessage(in, bErr, b.config.QueueInvalid)
-}
-
-func (b *Broker) queueErrorMessage(in interface{}, bErr error) {
-	b.handleErrMessage(in, bErr, b.config.QueueError)
-}
-
-// Subscribe creates a new subscription associated to every message received.
-func (b *Broker) Subscribe(cb MessageHandler) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.subs = append(b.subs, subscription{all: true, cb: cb})
-}
-
-// SubscribeType creates a new subscription associated to a particular message type.
-func (b *Broker) SubscribeType(t message.MessageTypeEnum, cb MessageHandler) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.subs = append(b.subs, subscription{mType: t, cb: cb})
+	b.logger.Debug("Message sent to the error message queue")
 }
 
 // Request sends a fire-and-forget request to RDSS.
 func (b *Broker) Request(_ context.Context, msg *message.Message) error {
-	data, err := msg.MarshalJSON()
+	payload, err := msg.MarshalJSON()
 	if err != nil {
 		return err
 	}
-	return b.backend.Publish(b.config.QueueMain, data)
+	return b.publishMessage(b.snsTopicMainARN, string(payload))
 }
 
 // RequestResponse sends a request and waits until a response is received.
@@ -298,12 +311,9 @@ func (b *Broker) RequestResponse(context.Context, *message.Message) (*message.Me
 	return nil, errors.New("not implemented yet")
 }
 
-// Count returns the total number of messages received by this broker since it
-// was executed.
-func (b *Broker) Count() uint64 {
-	return atomic.LoadUint64(&b.count)
-}
-
-func (b *Broker) Close() error {
-	return b.backend.Close()
+// Stop blocks until the broker terminates.
+func (b *Broker) Stop() {
+	ch := make(chan struct{})
+	b.stop <- ch
+	<-ch
 }

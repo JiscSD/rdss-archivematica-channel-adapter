@@ -2,17 +2,12 @@ package s3
 
 import (
 	"context"
-	"crypto/tls"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/http"
-	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -43,29 +38,6 @@ func (c *mockS3Client) GetObjectWithContext(ctx aws.Context, input *s3.GetObject
 	}, nil
 }
 
-func TestObjectStorageNew(t *testing.T) {
-	tests := []struct {
-		opts    []ClientOpt
-		wantErr bool
-	}{
-		{[]ClientOpt{}, false},
-		{[]ClientOpt{SetRegion("foobar")}, false},
-		{[]ClientOpt{func(*ObjectStorageImpl) error { return errors.New("error") }}, true},
-	}
-	for _, tt := range tests {
-		s, err := New(tt.opts...)
-		if tt.wantErr {
-			if s != nil || err == nil {
-				t.Error()
-			}
-		} else {
-			if s == nil || err != nil {
-				t.Error()
-			}
-		}
-	}
-}
-
 func TestObjectStorageImpl_Download(t *testing.T) {
 	const want = "Hello world!"
 
@@ -81,7 +53,7 @@ func TestObjectStorageImpl_Download(t *testing.T) {
 
 	s3c := &mockS3Client{t: t, f: fi}
 	s3d := s3manager.NewDownloaderWithClient(s3c)
-	client := &ObjectStorageImpl{S3: s3c, S3Downloader: s3d}
+	client := &ObjectStorageImpl{client: s3c, downloader: s3d}
 
 	var err error
 
@@ -103,43 +75,6 @@ func TestObjectStorageImpl_Download(t *testing.T) {
 	have := string(data)
 	if want != have {
 		t.Errorf("want %s, got %s", want, have)
-	}
-}
-
-func TestCustomEndpoint(t *testing.T) {
-	c, err := New(SetEndpoint("http://my.end-point.tld"))
-	if err != nil {
-		t.Fatalf("New() unexpected error: %v", err)
-	}
-
-	ci := c.(*ObjectStorageImpl)
-	want := "http://my.end-point.tld"
-	if got := *ci.S3Session.Config.Endpoint; got != want {
-		t.Errorf("New() Endpoint = %s; want %s", got, want)
-	}
-}
-
-func TestCustomKeys(t *testing.T) {
-	var (
-		aKey = "foo"
-		sKey = "bar"
-	)
-	c, err := New(SetKeys(aKey, sKey))
-	if err != nil {
-		t.Fatalf("New() unexpected error: %v", err)
-	}
-
-	ci := c.(*ObjectStorageImpl)
-	v, err := ci.S3Session.Config.Credentials.Get()
-	if err != nil {
-		t.Fatalf("ci.S3Session.Config.Credentials.Get() unexpected error: %v", err)
-	}
-
-	if v.AccessKeyID != aKey {
-		t.Errorf("AccessKeyID = %s; want %s", v.AccessKeyID, aKey)
-	}
-	if v.SecretAccessKey != sKey {
-		t.Errorf("SecretAccessKey = %s; want %s", v.SecretAccessKey, sKey)
 	}
 }
 
@@ -170,44 +105,6 @@ func Test_getBucketAndKey(t *testing.T) {
 		}
 		if key != tc.key {
 			t.Errorf("Unexpected key - got: %s, want: %s", key, tc.key)
-		}
-	}
-}
-
-func TestSetRegion(t *testing.T) {
-	s := &ObjectStorageImpl{S3Session: session.Must(session.NewSession())}
-	tests := []string{"region1", "region2", ""}
-	for _, tt := range tests {
-		want := tt
-		SetRegion(want)(s)
-		if got := s.S3Session.Config.Region; *got != want {
-			t.Errorf("SetRegion() = %v, want %v", *got, want)
-		}
-	}
-}
-
-func TestSetForcePathStyle(t *testing.T) {
-	s := &ObjectStorageImpl{S3Session: session.Must(session.NewSession())}
-	tests := []bool{true, false}
-	for _, tt := range tests {
-		want := tt
-		SetForcePathStyle(want)(s)
-		if got := s.S3Session.Config.S3ForcePathStyle; *got != want {
-			t.Errorf("SetForcePathStyle() = %v, want %v", *got, want)
-		}
-	}
-}
-
-func TestSetInsecureSkipVerify(t *testing.T) {
-	s := &ObjectStorageImpl{S3Session: session.Must(session.NewSession())}
-	tests := []bool{true, false}
-	for _, skip := range tests {
-		want := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-		SetInsecureSkipVerify(skip)(s)
-		if !reflect.DeepEqual(want, s.S3Session.Config.HTTPClient.Transport) {
-			t.Error("SetInsecureSkipVerify() hasn't updated HTTPClient properly")
 		}
 	}
 }
