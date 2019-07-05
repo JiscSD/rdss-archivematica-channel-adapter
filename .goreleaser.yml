@@ -1,0 +1,51 @@
+project_name: rdss-archivematica-channel-adapter
+
+before:
+  hooks:
+  - go mod download
+
+builds:
+- ldflags:
+  # -s (Omit the symbol table and debug information)
+  # -w (Omit the DWARF symbol table)
+  - -s -w -X github.com/JiscRDSS/rdss-archivematica-channel-adapter/version.VERSION={{.Version}}"
+  env:
+  # Disable CGO and link C bindings statically
+  # See https://github.com/golang/go/issues/26492 for more.
+  - CGO_ENABLED=0
+  goos:
+  - darwin
+  - windows
+  - linux
+  goarch:
+  - amd64
+
+archives:
+- format: binary
+
+dockers:
+- goos: linux
+  goarch: amd64
+  image_templates:
+  - "artefactual/rdss-archivematica-channel-adapter:latest"
+  - "artefactual/rdss-archivematica-channel-adapter:v{{ .Major }}"
+  - "artefactual/rdss-archivematica-channel-adapter:v{{ .Major }}.{{ .Minor }}"
+  dockerfile: Dockerfile.release
+  build_flag_templates:
+  - "--label=org.label-schema.schema-version=1.0"
+  - "--label=org.label-schema.version={{.Version}}"
+  - "--label=org.label-schema.name={{.ProjectName}}"
+  - "--label=com.github.actions.name={{.ProjectName}}"
+  - "--label=com.github.actions.description=RDSS Archivematica Channel Adapter"
+  - "--label=com.github.actions.icon=terminal"
+  - "--label=com.github.actions.color=blue"
+  - "--label=repository=http://github.com/JiscRDSS/rdss-archivematica-channel-adapter"
+  - "--label=homepage=http://github.com/JiscRDSS/rdss-archivematica-channel-adapter"
+  - "--label=maintainer=Jesús García Crespo <jesus@sevein.com>"
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+changelog:
+  skip: true
