@@ -20,7 +20,7 @@ func TestNewValidator(t *testing.T) {
 		]
 	}`)
 	DefaultSchemaDocFinder = func(string) ([]byte, error) { return schema, nil }
-	validator, err := NewValidator()
+	validator, err := NewValidator("strict")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestNewValidator(t *testing.T) {
 
 	// Test missing validator.
 	delete(rdssSchemas, "MetadataDeleteRequest")
-	validator, err = NewValidator()
+	validator, err = NewValidator("strict")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestNewValidator(t *testing.T) {
 func TestNewValidator_WithError(t *testing.T) {
 	var notFoundError = errors.New("schema not found")
 	DefaultSchemaDocFinder = func(string) ([]byte, error) { return nil, notFoundError }
-	validator, err := NewValidator()
+	validator, err := NewValidator("strict")
 	if validator != nil {
 		t.Fatalf("NewValidator() returned a non-nil value, got %v", validator)
 	}
@@ -234,7 +234,7 @@ func TestNoOpValidator(t *testing.T) {
 var (
 	benchRes          *gojsonschema.Result
 	benchErr          error
-	benchValidator, _ = NewValidator()
+	benchValidator, _ = NewValidator("strict")
 )
 
 func benchmarkValidation(msg *Message, validator Validator, b *testing.B) {
