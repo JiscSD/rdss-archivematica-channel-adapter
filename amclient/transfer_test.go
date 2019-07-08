@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTransfer_Start(t *testing.T) {
@@ -82,4 +84,42 @@ func TestTransfer_Unapproved(t *testing.T) {
 	if want, got := 2, len(payload.Results); want != got {
 		t.Errorf("Transfer.Unapproved() len(Results) %v, want %v", got, want)
 	}
+}
+
+func TestTransfer_Status(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/api/transfer/status/52dd0c01-e803-423a-be5f-b592b5d5d61c/", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		fmt.Fprint(w, `{
+	"status": "COMPLETE",
+	"name": "imgs",
+	"sip_uuid": "41699e73-ec9e-4240-b153-71f4155e7da4",
+	"microservice": "Microservice group name",
+	"directory": "imgs-52dd0c01-e803-423a-be5f-b592b5d5d61c",
+	"path": "/var/archivematica/sharedDirectory/watchedDirectories/SIPCreation/completedTransfers/imgs-52dd0c01-e803-423a-be5f-b592b5d5d61c/",
+	"message": "Fetched status for 52dd0c01-e803-423a-be5f-b592b5d5d61c successfully.",
+	"type": "transfer",
+	"uuid": "52dd0c01-e803-423a-be5f-b592b5d5d61c"
+}`)
+	})
+
+	payload, _, err := client.Transfer.Status(ctx, "52dd0c01-e803-423a-be5f-b592b5d5d61c")
+	if err != nil {
+		t.Errorf("Transfer.Status() returned error: %v", err)
+	}
+
+	assert.NoError(t, err)
+	assert.Equal(t, &TransferStatusResponse{
+		ID:           "52dd0c01-e803-423a-be5f-b592b5d5d61c",
+		Status:       "COMPLETE",
+		Name:         "imgs",
+		SIPID:        "41699e73-ec9e-4240-b153-71f4155e7da4",
+		Microservice: "Microservice group name",
+		Directory:    "imgs-52dd0c01-e803-423a-be5f-b592b5d5d61c",
+		Path:         "/var/archivematica/sharedDirectory/watchedDirectories/SIPCreation/completedTransfers/imgs-52dd0c01-e803-423a-be5f-b592b5d5d61c/",
+		Message:      "Fetched status for 52dd0c01-e803-423a-be5f-b592b5d5d61c successfully.",
+		Type:         "transfer",
+	}, payload)
 }
