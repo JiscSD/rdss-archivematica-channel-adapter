@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -40,6 +39,8 @@ type Client struct {
 	Transfer         TransferService
 	ProcessingConfig ProcessingConfigService
 	Package          PackageService
+	Jobs             JobsService
+	Task             TaskService
 
 	// Local temporary filesystem. See transfer_session.go for more details.
 	Fs afero.Fs
@@ -81,6 +82,8 @@ func NewClient(httpClient *http.Client, bu, u, k string) *Client {
 	c.Transfer = &TransferServiceOp{client: c}
 	c.ProcessingConfig = &ProcessingConfigOp{client: c}
 	c.Package = &PackageServiceOp{client: c}
+	c.Jobs = &JobsServiceOp{client: c}
+	c.Task = &TaskServiceOp{client: c}
 	return c
 }
 
@@ -229,15 +232,5 @@ func CheckResponse(r *http.Response) error {
 	if c := r.StatusCode; c >= 200 && c <= 299 {
 		return nil
 	}
-
-	errorResponse := &ErrorResponse{Response: r}
-	data, err := ioutil.ReadAll(r.Body)
-	if err == nil && len(data) > 0 {
-		err := json.Unmarshal(data, errorResponse)
-		if err != nil {
-			return err
-		}
-	}
-
-	return errorResponse
+	return &ErrorResponse{Response: r}
 }
