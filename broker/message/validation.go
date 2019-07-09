@@ -38,22 +38,20 @@ type rdssValidator struct {
 
 var _ Validator = rdssValidator{}
 
-// rdssPrefix is used by our schema loder so we can differentiate local
+// rdssPrefix is used by our schema loader so we can differentiate local
 // references from external references. When rdssPrefix is matched the schema
 // loader will load our internal schemas persisted in the specdata package.
 // It is not a constant becuase we change it in our tests.
 var rdssPrefix = "https://www.jisc.ac.uk/rdss/schema/"
 
 var rdssSchemas = map[string]string{
-	"header":                 "https://www.jisc.ac.uk/rdss/schema/messages/header/header_schema.json",
-	"MetadataCreateRequest":  "https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/create/request_schema.json",
-	"MetadataDeleteRequest":  "https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/delete/request_schema.json",
-	"MetadataReadRequest":    "https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/read/request_schema.json",
-	"MetadataReadResponse":   "https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/read/response_schema.json",
-	"MetadataUpdateRequest":  "https://www.jisc.ac.uk/rdss/schema/messages/body/metadata/update/request_schema.json",
-	"VocabularyPatchRequest": "https://www.jisc.ac.uk/rdss/schema/messages/body/vocabulary/patch/request_schema.json",
-	"VocabularyReadRequest":  "https://www.jisc.ac.uk/rdss/schema/messages/body/vocabulary/read/request_schema.json",
-	"VocabularyReadResponse": "https://www.jisc.ac.uk/rdss/schema/messages/body/vocabulary/read/response_schema.json",
+	"header":                   "https://www.jisc.ac.uk/rdss/schema/message/header.json",
+	"MetadataCreateRequest":    "https://www.jisc.ac.uk/rdss/schema/message/metadata/create_request.json",
+	"MetadataDeleteRequest":    "https://www.jisc.ac.uk/rdss/schema/message/metadata/delete_request.json",
+	"MetadataReadRequest":      "https://www.jisc.ac.uk/rdss/schema/message/metadata/read_request.json",
+	"MetadataReadResponse":     "https://www.jisc.ac.uk/rdss/schema/message/metadata/read_response.json",
+	"MetadataUpdateRequest":    "https://www.jisc.ac.uk/rdss/schema/message/metadata/update_request.json",
+	"PreservationEventRequest": "https://www.jisc.ac.uk/rdss/schema/message/preservation/preservation_event_request.json",
 }
 
 // schemaDocFinder is a function that given a reference like the ones found in

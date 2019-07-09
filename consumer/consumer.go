@@ -60,8 +60,8 @@ func MakeConsumer(
 
 // Start implements Consumer
 func (c *ConsumerImpl) Start() {
-	c.broker.SubscribeType(message.MessageTypeMetadataCreate, c.handleMetadataCreateRequest)
-	c.broker.SubscribeType(message.MessageTypeMetadataUpdate, c.handleMetadataUpdateRequest)
+	c.broker.SubscribeType(message.MessageTypeEnum_MetadataCreate, c.handleMetadataCreateRequest)
+	c.broker.SubscribeType(message.MessageTypeEnum_MetadataUpdate, c.handleMetadataUpdateRequest)
 
 	<-c.ctx.Done()
 	c.broker.Close()
@@ -75,12 +75,13 @@ func (c *ConsumerImpl) handleMetadataCreateRequest(msg *message.Message) error {
 	if err != nil {
 		return err
 	}
-	id, err := c.startTransfer(&body.ResearchObject)
+	researchObject := body.InferResearchObject()
+	id, err := c.startTransfer(researchObject)
 	if err != nil {
 		return err
 	}
 	c.logger.Debugf("The transfer has started successfully, id: %s", id)
-	if err := c.storage.AssociateResearchObject(c.ctx, body.ObjectUuid.String(), id); err != nil {
+	if err := c.storage.AssociateResearchObject(c.ctx, researchObject.ObjectUUID.String(), id); err != nil {
 		// We don't want to discard the message at this point.
 		c.logger.Errorf("Error trying to persist the research object: %v", err)
 	}
@@ -96,9 +97,10 @@ func (c *ConsumerImpl) handleMetadataUpdateRequest(msg *message.Message) error {
 	if err != nil {
 		return err
 	}
+	researchObject := body.InferResearchObject()
 	// Determine if the message is pointing to a previous dataset.
 	var match *message.IdentifierRelationship
-	for _, item := range body.ObjectRelatedIdentifier {
+	for _, item := range researchObject.ObjectRelatedIdentifier {
 		if item.RelationType != message.RelationTypeEnum_isNewVersionOf {
 			continue
 		}
@@ -118,19 +120,19 @@ func (c *ConsumerImpl) handleMetadataUpdateRequest(msg *message.Message) error {
 	// At this point we know the previous transferID so we could reingest.
 	// In this first iteration we're just starting a new transfer.
 	logger.WithFields(log.Fields{"transferID": transferID, "TODO": "Implement real reingest."}).Debug("Reingesting transfer.")
-	_, err = c.startTransfer(&body.ResearchObject)
+	_, err = c.startTransfer(researchObject)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *ConsumerImpl) startTransfer(body *message.ResearchObject) (string, error) {
+func (c *ConsumerImpl) startTransfer(researchObject *message.ResearchObject) (string, error) {
 	// Ignore messages with no files listed.
-	if len(body.ObjectFile) == 0 {
+	if len(researchObject.ObjectFile) == 0 {
 		return "", nil
 	}
-	t, err := c.amc.TransferSession(body.ObjectTitle)
+	t, err := c.amc.TransferSession(researchObject.ObjectTitle)
 	if err != nil {
 		return "", err
 	}
@@ -140,8 +142,8 @@ func (c *ConsumerImpl) startTransfer(body *message.ResearchObject) (string, erro
 		c.logger.Warningf("Failed to download `%s` processing configuration: %s", automatedProcessingConfiguration, err)
 	}
 	// Process dataset metadata.
-	describeDataset(t, body)
-	for _, file := range body.ObjectFile {
+	describeDataset(t, researchObject)
+	for _, file := range researchObject.ObjectFile {
 		// Add checksum metadata. We're not going to verify checksums at this
 		// point because this is something meant to do by Archivematica.
 		for _, c := range file.FileChecksum {
@@ -266,8 +268,8 @@ func describeDataset(t *amclient.TransferSession, f *message.ResearchObject) {
 		if item.DateType != message.DateTypeEnum_published {
 			continue
 		}
-		t.Describe("dcterms.issued", item.DateValue)
-		t.Describe("dc.publicationYear", item.DateValue)
+		t.Describe("dcterms.issued", item.DateValue.String())
+		t.Describe("dc.publicationYear", item.DateValue.String())
 	}
 
 	for _, item := range f.ObjectOrganisationRole {

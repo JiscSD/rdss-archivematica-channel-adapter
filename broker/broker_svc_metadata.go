@@ -20,7 +20,7 @@ type MetadataServiceOp struct {
 
 // Create implements MetadataService
 func (s *MetadataServiceOp) Create(ctx context.Context, req *message.MetadataCreateRequest) error {
-	msg := message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand)
+	msg := message.New(message.MessageTypeEnum_MetadataCreate, message.MessageClassEnum_Command)
 	msg.MessageBody = req
 
 	return s.broker.Request(ctx, msg)
@@ -28,7 +28,7 @@ func (s *MetadataServiceOp) Create(ctx context.Context, req *message.MetadataCre
 
 // Read implements MetadataService
 func (s *MetadataServiceOp) Read(ctx context.Context, req *message.MetadataReadRequest) (*message.MetadataReadResponse, error) {
-	msg := message.New(message.MessageTypeMetadataRead, message.MessageClassCommand)
+	msg := message.New(message.MessageTypeEnum_MetadataRead, message.MessageClassEnum_Command)
 	msg.MessageBody = req
 
 	resp, err := s.broker.RequestResponse(ctx, msg)
@@ -42,7 +42,7 @@ func (s *MetadataServiceOp) Read(ctx context.Context, req *message.MetadataReadR
 
 // Update implements MetadataService
 func (s *MetadataServiceOp) Update(ctx context.Context, req *message.MetadataUpdateRequest) error {
-	msg := message.New(message.MessageTypeMetadataUpdate, message.MessageClassCommand)
+	msg := message.New(message.MessageTypeEnum_MetadataUpdate, message.MessageClassEnum_Command)
 	msg.MessageBody = req
 
 	return s.broker.Request(ctx, msg)
@@ -50,7 +50,7 @@ func (s *MetadataServiceOp) Update(ctx context.Context, req *message.MetadataUpd
 
 // Delete implements MetadataService
 func (s *MetadataServiceOp) Delete(ctx context.Context, req *message.MetadataDeleteRequest) error {
-	msg := message.New(message.MessageTypeMetadataDelete, message.MessageClassCommand)
+	msg := message.New(message.MessageTypeEnum_MetadataDelete, message.MessageClassEnum_Command)
 	msg.MessageBody = req
 
 	return s.broker.Request(ctx, msg)

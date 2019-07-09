@@ -245,12 +245,12 @@ func TestRepositoryDynamoDBImpl_Put(t *testing.T) {
 		client  *mockDynamoDBClient
 	}{
 		{
-			message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand),
+			message.New(message.MessageTypeEnum_MetadataCreate, message.MessageClassEnum_Command),
 			false,
 			&mockDynamoDBClient{},
 		},
 		{
-			message.New(message.MessageTypeMetadataCreate, message.MessageClassCommand),
+			message.New(message.MessageTypeEnum_MetadataCreate, message.MessageClassEnum_Command),
 			true,
 			&mockDynamoDBClient{PutItem_WantedErr: errors.New("error")},
 		},
