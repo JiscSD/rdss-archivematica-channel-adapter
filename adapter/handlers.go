@@ -10,6 +10,8 @@ import (
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/amclient"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3"
+	"github.com/pkg/errors"
+	"github.com/twinj/uuid"
 
 	"github.com/cenkalti/backoff/v3"
 	"github.com/sirupsen/logrus"
@@ -32,6 +34,34 @@ func (c *Adapter) handleMetadataCreateRequest(msg *message.Message) error {
 	if err := c.storage.AssociateResearchObject(c.ctx, researchObject.ObjectUUID.String(), id); err != nil {
 		// We don't want to discard the message at this point.
 		c.logger.Errorf("Error trying to persist the research object: %v", err)
+	}
+	aipid, err := amclient.WaitUntilStored(c.ctx, c.amc, id)
+	if err != nil {
+		return err
+	}
+	aipuuid, err := message.ParseUUID(aipid)
+	if err != nil {
+		return errors.Wrap(err, "SIP UUID is invalid")
+	}
+	var (
+		packageTypeAIP        = message.PackageTypeEnum_AIP
+		packageContainerType  = message.ContainerTypeEnum_zip
+		preservationEventType = message.PreservationEventTypeEnum_informationPackageCreation
+	)
+	err = c.broker.Preservation.Event(c.ctx, &message.PreservationEventRequest{
+		InformationPackage: message.InformationPackage{
+			ObjectUUID:           researchObject.ObjectUUID,
+			PackageUUID:          aipuuid,
+			PackageType:          &packageTypeAIP,
+			PackageContainerType: &packageContainerType,
+			PackagePreservationEvent: message.PreservationEvent{
+				PreservationEventValue: uuid.NewV4().String(),
+				PreservationEventType:  &preservationEventType,
+			},
+		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "PreservationEvent message could not be sent")
 	}
 	return nil
 }
