@@ -13,7 +13,7 @@ type File struct {
 	FileCompositionLevel   string              `json:"fileCompositionLevel"`
 	FileHasMimeType        bool                `json:"fileHasMimeType,omitempty"`
 	FileDateModified       []Timestamp         `json:"fileDateModified"`
-	FilePuid               []string            `json:"filePuid,omitempty"`
+	FilePUID               []string            `json:"filePuid,omitempty"`
 	FileUse                FileUseEnum         `json:"fileUse"`
 	FilePreservationEvent  string              `json:"filePreservationEvent,omitempty"`
 	FileUploadStatus       UploadStatusEnum    `json:"fileUploadStatus"`
