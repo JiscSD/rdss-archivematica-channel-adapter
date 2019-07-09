@@ -39,7 +39,7 @@ func (t *Timestamp) UnmarshalJSON(data []byte) error {
 	if str == "null" {
 		return nil
 	}
-	// Ignore emtpy string.
+	// Ignore empty string.
 	if str == "\"\"" {
 		return nil
 	}

@@ -174,7 +174,7 @@ func (c *Client) newRequest(ctx context.Context, method, urlStr, mediaType strin
 func (c *Client) NewRequest(ctx context.Context, method, urlStr string, body interface{}, opts ...RequestOpt) (*http.Request, error) {
 	form := url.Values{}
 	encoder := schema.NewEncoder()
-	encoder.Encode(body, form)
+	_ = encoder.Encode(body, form)
 	reader := strings.NewReader(form.Encode())
 	return c.newRequest(ctx, method, urlStr, mediaTypeForm, reader, opts...)
 }

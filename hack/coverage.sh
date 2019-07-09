@@ -10,7 +10,7 @@ coverprofile=$(mktemp /tmp/coverage.XXXXXXXXXX)
 hash goveralls 2>/dev/null || go get github.com/mattn/goveralls
 
 generate_cover_data() {
-    go test -coverprofile="${coverprofile}" -covermode="${covermode}" $(go list ./...)
+    go test -short -coverprofile="${coverprofile}" -covermode="${covermode}" $(go list ./...)
 }
 
 push_to_coveralls() {

@@ -75,7 +75,7 @@ func TestResearchObjectBase_FromJSON(t *testing.T) {
 					if tname := reflect.Indirect(field).Type().Name(); tname != tt.prop {
 						t.Fatalf("%s has a non-nil value but it is a %s but a %s", name, tname, tt.prop)
 					}
-					uuid := fmt.Sprintf("%s", reflect.Indirect(field).FieldByName("ObjectUUID"))
+					uuid := reflect.Indirect(field).FieldByName("ObjectUUID").MethodByName("String").Call(nil)[0].String()
 					if uuid != "e01d51f5-57e7-422a-9622-448eaef6abf3" {
 						t.Fatalf("objectUUID seen after unserialization unexpected %s", uuid)
 					}
