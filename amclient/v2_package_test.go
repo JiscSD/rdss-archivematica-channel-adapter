@@ -2,15 +2,23 @@ package amclient
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPackage_Create(t *testing.T) {
 	setup()
 	defer teardown()
+
+	var (
+		path    = "<uuid>:<path>"
+		pathb64 = base64.StdEncoding.EncodeToString([]byte(path))
+	)
 
 	mux.HandleFunc("/api/v2beta/package/", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
@@ -20,10 +28,10 @@ func TestPackage_Create(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer r.Body.Close()
-		var expected = []byte(`{"name":"Foobar","type":"standard","accession":"","path":"PHV1aWQ+OjxwYXRoPg==","metadata_set_id":""}`)
-		if !bytes.Equal(bytes.TrimSpace(blob), expected) {
-			t.Fatal("path attribute does not have the expected value")
-		}
+
+		assert.Equal(t,
+			string(bytes.TrimSpace(blob)),
+			fmt.Sprintf(`{"name":"Foobar","type":"standard","path":"%s","auto_approve":true}`, pathb64))
 
 		fmt.Fprint(w, `{"id": "096a284d-5067-4de0-a0a4-a684018cd6df"}`)
 	})
@@ -31,7 +39,7 @@ func TestPackage_Create(t *testing.T) {
 	req := &PackageCreateRequest{
 		Name: "Foobar",
 		Type: "standard",
-		Path: "<uuid>:<path>",
+		Path: path,
 	}
 	payload, _, _ := client.Package.Create(ctx, req)
 
