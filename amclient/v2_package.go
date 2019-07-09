@@ -19,11 +19,13 @@ type PackageServiceOp struct {
 var _ PackageService = &PackageServiceOp{}
 
 type PackageCreateRequest struct {
-	Name          string `json:"name"`
-	Type          string `json:"type"`
-	Accession     string `json:"accession"`
-	Path          string `json:"path"`
-	MetadataSetID string `json:"metadata_set_id"`
+	Name              string `json:"name"`
+	Type              string `json:"type"`
+	Path              string `json:"path"`
+	AccessionSystemID string `json:"access_system_id,omitempty"`
+	MetadataSetID     string `json:"metadata_set_id,omitempty"`
+	ProcessingConfig  string `json:"processing_config,omitempty"`
+	AutoApprove       *bool  `json:"auto_approve,omitempty"`
 }
 
 type PackageCreateResponse struct {
@@ -38,7 +40,10 @@ func (s *PackageServiceOp) Create(ctx context.Context, r *PackageCreateRequest) 
 	if r.Type == "" {
 		r.Type = standardTransferType
 	}
-
+	if r.AutoApprove == nil {
+		var approve = true
+		r.AutoApprove = &approve
+	}
 	r.Path = base64.StdEncoding.EncodeToString([]byte(r.Path))
 
 	req, err := s.client.NewRequestJSON(ctx, "POST", path, r)
