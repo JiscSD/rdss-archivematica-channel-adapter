@@ -1,25 +1,50 @@
 ---
+
+dist: bionic
+
+sudo: false
+
+language: go
+
 branches:
   only:
     - "master"
-language: go
-go:
-  - 1.x
-  - tip
-env:
-  global: 
-    - GO111MODULE=on
-cache:
-  directories:
-    - "$HOME/gopath/pkg/mod"
-matrix:
-  allow_failures:
-    - go: tip
-  fast_finish: true
-install:
-  - make tools
-script:
-  - hack/coverage.sh --coveralls
-  - make
+
+git:
+  depth: 3
+  quiet: true
+  submodules: false
+
 notifications:
   email: false
+
+cache:
+  directories:
+    - $HOME/.cache/go-build
+    - $HOME/gopath/pkg/mod
+
+jobs:
+  include:
+    - os: linux
+      go: "1.12.x"
+      env:
+        - TEST_TYPE=unit
+        - GO111MODULE=on
+      script:
+        - go mod download
+        - make tools
+        - make build testrace
+        - make fmt
+        - make lint
+        - hack/coverage.sh --coveralls
+    - os: linux
+      go: "1.12.x"
+      env:
+        - TEST_TYPE=integration
+        - GO111MODULE=on
+      services:
+        - docker
+      script:
+        - go mod download
+        - make install
+        - docker ps

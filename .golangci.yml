@@ -1,0 +1,16 @@
+run:
+  deadline: 60s
+  skip-dirs:
+    - dist
+    - hack
+    - message-api-spec
+
+linters:
+  enable:
+  - misspell
+
+issues:
+  exclude-rules:
+  - path: _test\.go
+    linters:
+    - errcheck

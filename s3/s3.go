@@ -18,7 +18,7 @@ type ObjectStorage interface {
 	Download(ctx context.Context, w io.WriterAt, URI string) (int64, error)
 }
 
-// ObjectStorageImpl is our implementatino of the ObjectStorage interface.
+// ObjectStorageImpl is our implementation of the ObjectStorage interface.
 type ObjectStorageImpl struct {
 	client     s3iface.S3API
 	downloader *s3manager.Downloader

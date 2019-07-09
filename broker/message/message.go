@@ -86,7 +86,7 @@ func (m *Message) TagError(err error) {
 	if ok && e != nil {
 		m.MessageHeader.ErrorCode = e.Kind.String()
 		m.MessageHeader.ErrorDescription = e.Err.Error()
-	} else if !ok && err != nil {
+	} else if !ok {
 		m.MessageHeader.ErrorCode = "Unknown"
 		m.MessageHeader.ErrorDescription = err.Error()
 	}
