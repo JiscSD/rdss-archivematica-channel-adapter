@@ -30,4 +30,5 @@ require (
 	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb // indirect
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/tools v0.0.0-20190311212946-11955173bddd
+	honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099
 )

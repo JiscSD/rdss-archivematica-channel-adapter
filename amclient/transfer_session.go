@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -395,21 +393,4 @@ func (c *ChecksumSet) Write() error {
 	}
 
 	return nil
-}
-
-var (
-	regexSeparators = regexp.MustCompile(`[ &_=+:]`)
-	regexLegal      = regexp.MustCompile(`[^[:alnum:]-.]`)
-)
-
-// safeFileName returns safe string that can be used in file names
-func safeFileName(str string) string {
-	name := strings.Replace(str, "/", "-", -1)
-	name = strings.Trim(name, " ")
-	name = regexSeparators.ReplaceAllString(name, "-")
-	name = regexLegal.ReplaceAllString(name, "")
-	for strings.Contains(name, "--") {
-		name = strings.Replace(name, "--", "-", -1)
-	}
-	return name
 }

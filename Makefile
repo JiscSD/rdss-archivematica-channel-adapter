@@ -1,11 +1,12 @@
 VERSION := $(shell git describe --tags --always --dirty)
 
-default: testrace vet fmt
+default: testrace vet fmt staticcheck
 
 tools:
 	# See also tools.go
 	go install github.com/johnewart/io-bindata
 	go install golang.org/x/tools/cmd/cover
+	go install honnef.co/go/tools/cmd/staticcheck
 
 build:
 	@echo ${VERSION}
@@ -26,6 +27,9 @@ vet:
 
 fmt:
 	@test -z "$(shell gofmt -l -d -e . | tee /dev/stderr)"
+
+staticcheck:
+	@staticcheck -f stylish ./...
 
 cover:
 	@hack/coverage.sh

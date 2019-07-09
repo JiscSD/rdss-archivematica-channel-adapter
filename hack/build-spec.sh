@@ -13,8 +13,11 @@ readonly __gopath="$(cd "$(dirname "${__root}/../../../")" && pwd)"
 echo "Compiling..."
 cd ${__root}
 
+genfile="./broker/message/specdata/specdata.go"
+tmpfile=$(mktemp /tmp/abc-script.XXXXXX)
+
 io-bindata \
-	-o "./broker/message/specdata/specdata.go" \
+	-o ${genfile} \
 	-nometadata \
 	-pkg "specdata" \
 	-prefix "./message-api-spec" \
@@ -22,3 +25,5 @@ io-bindata \
 		"./message-api-spec/messages/..."
 
 go fmt ./broker/message/specdata/...
+
+echo "//lint:file-ignore ST1005 Generated code." | cat - ${genfile} > ${tmpfile} && mv ${tmpfile} ${genfile}

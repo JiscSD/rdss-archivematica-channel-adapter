@@ -74,8 +74,6 @@ type Broker struct {
 	snsTopicMainARN    string
 	snsTopicInvalidARN string
 	snsTopicErrorARN   string
-	dynamodbClient     dynamodbiface.DynamoDBAPI
-	dynamodbTable      string
 	validator          message.Validator
 	ctx                context.Context
 	cancel             context.CancelFunc

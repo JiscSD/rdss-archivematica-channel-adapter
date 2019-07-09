@@ -264,7 +264,7 @@ type EmailFormatChecker struct{}
 // IsFormat implements gojsonschema.FormatChecker.
 func (f EmailFormatChecker) IsFormat(input interface{}) bool {
 	asString, ok := input.(string)
-	if ok == false {
+	if !ok {
 		return false
 	}
 	const addressUsedInSpecExamples = "person@net"
