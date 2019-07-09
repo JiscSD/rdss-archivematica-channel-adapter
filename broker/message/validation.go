@@ -53,7 +53,7 @@ var _ Validator = rdssValidator{}
 // rdssPrefix is used by our schema loader so we can differentiate local
 // references from external references. When rdssPrefix is matched the schema
 // loader will load our internal schemas persisted in the specdata package.
-// It is not a constant becuase we change it in our tests.
+// It is not a constant because we change it in our tests.
 var rdssPrefix = "https://www.jisc.ac.uk/rdss/schema/"
 
 var rdssSchemas = map[string]string{
@@ -134,7 +134,7 @@ func NewValidator(mode string) (Validator, error) {
 	return v, nil
 }
 
-// Validate implementes Validator. It aggregates the results of both the header
+// Validate implements Validator. It aggregates the results of both the header
 // and the body validation results.
 func (v rdssValidator) Validate(msg *Message) (*gojsonschema.Result, error) {
 	res, err := v.validateBody(msg.body, msg.Type())
@@ -175,7 +175,7 @@ func (v rdssValidator) validateBody(data []byte, mType string) (*gojsonschema.Re
 	return val.Validate(loader)
 }
 
-// Validators implementes Validator.
+// Validators implements Validator.
 func (v rdssValidator) Validators() map[string]*gojsonschema.Schema {
 	return v.validators
 }
@@ -245,12 +245,12 @@ type NoOpValidator struct{}
 
 var _ Validator = NoOpValidator{}
 
-// Validate implementes Validator.
+// Validate implements Validator.
 func (v NoOpValidator) Validate(msg *Message) (*gojsonschema.Result, error) {
 	return &gojsonschema.Result{}, nil
 }
 
-// Validators implementes Validator.
+// Validators implements Validator.
 func (v NoOpValidator) Validators() map[string]*gojsonschema.Schema {
 	return map[string]*gojsonschema.Schema{}
 }
@@ -264,7 +264,7 @@ type EmailFormatChecker struct{}
 // IsFormat implements gojsonschema.FormatChecker.
 func (f EmailFormatChecker) IsFormat(input interface{}) bool {
 	asString, ok := input.(string)
-	if ok == false {
+	if !ok {
 		return false
 	}
 	const addressUsedInSpecExamples = "person@net"

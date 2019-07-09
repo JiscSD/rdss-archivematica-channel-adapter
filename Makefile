@@ -1,11 +1,14 @@
 VERSION := $(shell git describe --tags --always --dirty)
 
-default: testrace vet fmt
+default: testrace fmt lint
 
 tools:
-	# See also tools.go
+	# Install tools listed in tools.go.
 	go install github.com/johnewart/io-bindata
 	go install golang.org/x/tools/cmd/cover
+
+	# Install golangci-lint.
+	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.17.1
 
 build:
 	@echo ${VERSION}
@@ -21,11 +24,11 @@ test:
 testrace:
 	@go test -race ./...
 
-vet:
-	@go vet ./...
-
 fmt:
 	@test -z "$(shell gofmt -l -d -e . | tee /dev/stderr)"
+
+lint:
+	@golangci-lint run
 
 cover:
 	@hack/coverage.sh
@@ -46,4 +49,4 @@ release-test:
 
 .NOTPARALLEL:
 
-.PHONY: default tools build test testrace cover proto bench spec
+.PHONY: default tools build install test testrace fmt lint cover spec bench release release-test

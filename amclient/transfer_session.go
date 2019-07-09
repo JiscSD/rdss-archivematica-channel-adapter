@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
@@ -161,7 +159,7 @@ func (s *TransferSession) Start() (string, error) {
 // temporary transfer filesystem.
 func (s *TransferSession) Contents() []string {
 	var paths []string
-	s.fs.Walk("", func(path string, info os.FileInfo, err error) error {
+	_ = s.fs.Walk("", func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
@@ -304,7 +302,7 @@ func (m *MetadataSet) Write() error {
 	sort.Strings(fields)
 
 	// Write header row in CSV.
-	writer.Write(append([]string{"filename"}, fields...))
+	_ = writer.Write(append([]string{"filename"}, fields...))
 
 	// Create an slice of filenames sorted alphabetically. We're going to use it
 	// so we can iterate over the files in order to generate CSV output in a
@@ -346,7 +344,7 @@ func (m *MetadataSet) Write() error {
 			values = append(values, value)
 		}
 		if len(values) > 1 {
-			writer.Write(values)
+			_ = writer.Write(values)
 		}
 	}
 
@@ -398,21 +396,4 @@ func (c *ChecksumSet) Write() error {
 	}
 
 	return nil
-}
-
-var (
-	regexSeparators = regexp.MustCompile(`[ &_=+:]`)
-	regexLegal      = regexp.MustCompile(`[^[:alnum:]-.]`)
-)
-
-// safeFileName returns safe string that can be used in file names
-func safeFileName(str string) string {
-	name := strings.Replace(str, "/", "-", -1)
-	name = strings.Trim(name, " ")
-	name = regexSeparators.ReplaceAllString(name, "-")
-	name = regexLegal.ReplaceAllString(name, "")
-	for strings.Contains(name, "--") {
-		name = strings.Replace(name, "--", "-", -1)
-	}
-	return name
 }

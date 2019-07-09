@@ -111,7 +111,7 @@ func (r *Registry) loop() {
 		case <-ticker.C:
 		case <-r.reloadCh:
 		}
-		r.load()
+		_ = r.load()
 	}
 }
 

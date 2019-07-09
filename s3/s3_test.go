@@ -44,7 +44,7 @@ func TestObjectStorageImpl_Download(t *testing.T) {
 	// Input file S3 mock is to read from
 	fi := tempFile(t)
 	defer fi.Close()
-	fmt.Fprintf(fi, want) // Write the contents
+	fmt.Fprint(fi, want) // Write the contents
 	fi.Seek(0, 0)
 
 	// Output file we want to validate
