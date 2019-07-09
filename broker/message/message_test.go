@@ -212,7 +212,7 @@ func TestMessage_ToJSON(t *testing.T) {
 	if !bytes.Equal(have, fixture) {
 		t.Errorf("Unexpected result:\nHAVE: `%s`\nEXPECTED: `%s`", have, fixture)
 		// ioutil.WriteFile("/tmp/test_message_1.txt", have, 0644)
-		// ioutil.WriteFile("/tmp/test_messgae_2", fixture, 0644)
+		// ioutil.WriteFile("/tmp/test_message_2.txt", fixture, 0644)
 	}
 }
 
@@ -287,7 +287,7 @@ var sharedTests = []struct {
 	{"MetadataDeleteRequest", "messages/body/metadata/delete/research_object_delete_request.json", MessageTypeEnum_MetadataDelete, MessageClassEnum_Command, false},
 	{"MetadataReadRequest", "messages/body/metadata/read/research_object_read_request.json", MessageTypeEnum_MetadataRead, MessageClassEnum_Command, false},
 	{"MetadataReadResponse", "messages/body/metadata/read/research_object_read_response.json", MessageTypeEnum_MetadataRead, MessageClassEnum_Command, true},
-	{"MetadataUpdateRequest", "messages/body/metadata/update/research_object_update_request.json", MessageTypeMetadataUpdate, MessageClassCommand, false},
+	{"MetadataUpdateRequest", "messages/body/metadata/update/research_object_update_request.json", MessageTypeEnum_MetadataUpdate, MessageClassEnum_Command, false},
 	{"PreservationEventRequest", "messages/body/preservation/preservation_event_request.json", MessageTypeEnum_PreservationEvent, MessageClassEnum_Event, false},
 }
 
