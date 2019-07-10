@@ -43,7 +43,7 @@ type Client struct {
 	Task             TaskService
 
 	// Local temporary filesystem. See transfer_session.go for more details.
-	Fs afero.Fs
+	fs afero.Fs
 }
 
 // Response is an Archivematica response. This wraps the standard http.Response
@@ -77,7 +77,6 @@ func NewClient(httpClient *http.Client, bu, u, k string) *Client {
 		User:      u,
 		Key:       k,
 		UserAgent: userAgent,
-		Fs:        afero.NewMemMapFs(),
 	}
 	c.Transfer = &TransferServiceOp{client: c}
 	c.ProcessingConfig = &ProcessingConfigOp{client: c}
@@ -113,9 +112,23 @@ func SetUserAgent(ua string) ClientOpt {
 // SetFs is a client option for setting the local temporary filesystem.
 func SetFs(fs afero.Fs) ClientOpt {
 	return func(c *Client) error {
-		c.Fs = fs
+		c.fs = fs
 		return nil
 	}
+}
+
+// SetFsPath is a client option for setting the local temporary filesystem to
+// the desired local filesystem path.
+func SetFsPath(path string) ClientOpt {
+	return func(c *Client) error {
+		c.fs = afero.NewBasePathFs(afero.NewOsFs(), path)
+		return nil
+	}
+}
+
+// TransferSession returns a new TransferSession bounded to this client.
+func (c *Client) TransferSession(name string) (*TransferSession, error) {
+	return NewTransferSession(c, name)
 }
 
 // RequestOpt is a function type used to alter requests.

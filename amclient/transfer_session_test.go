@@ -3,7 +3,7 @@ package amclient
 import (
 	"context"
 	"io/ioutil"
-	"net/url"
+	"net/http"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -11,17 +11,18 @@ import (
 	"github.com/spf13/afero"
 )
 
-// setupTransferDir sets up the global `transferFS` off a temporary directory.
-func setupTransferDir(t *testing.T) *afero.Afero {
+// newClient is a helper used to build a client with a mocked PackageService.
+func newClient(t *testing.T) *Client {
 	tmpdir, err := ioutil.TempDir("", "transferDirTest")
 	if err != nil {
 		t.Fatalf("cannot create temporary directory: %s", err)
 	}
-	err = TransferDir(tmpdir)
+	c, err := New(http.DefaultClient, "http://localhost", "", "", SetFsPath(tmpdir))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("cannot create client: %s", err)
 	}
-	return transferFS
+	c.Package = &packageServiceMock{t: t}
+	return c
 }
 
 // newTransferSession is a helper used to created TransferSession objects.
@@ -29,21 +30,11 @@ func newTransferSession(t *testing.T, name string) *TransferSession {
 	if name == "" {
 		name = "MyTransfer"
 	}
-	c := getClient(t)
-	setupTransferDir(t)
-	ts, err := NewTransferSession(c, name)
+	ts, err := NewTransferSession(newClient(t), name)
 	if err != nil {
 		t.Fatalf("NewTransferSession() returned a non-nil error: %v", err)
 	}
 	return ts
-}
-
-// getClient is a helper used to build a client with a mocked TransferService.
-func getClient(t *testing.T) *Client {
-	url, _ := url.Parse("http://localhost")
-	c := NewClient(nil, url.String(), "", "")
-	c.Package = &packageServiceMock{t: t}
-	return c
 }
 
 type packageServiceMock struct {
@@ -56,22 +47,6 @@ func (m *packageServiceMock) Create(ctx context.Context, r *PackageCreateRequest
 	return &PackageCreateResponse{
 		ID: "53e80f90-0d34-4103-8583-8d86cbf70069",
 	}, &Response{}, nil
-}
-
-func Test_tmpfs(t *testing.T) {
-	tfs := setupTransferDir(t)
-	fs, err := tmpfs(tfs)
-	if err != nil {
-		t.Fatalf("Unexpected non-nil error returned: %v", err)
-	}
-	path := afero.FullBaseFsPath(fs.Fs.(*afero.BasePathFs), "/")
-	stat, err := tfs.Stat(path)
-	if err != nil {
-		t.Fatalf("fs.Stat(path) returned an error: %v", err)
-	}
-	if !stat.IsDir() {
-		t.Fatal("Directory not created")
-	}
 }
 
 func TestNewTransferSession(t *testing.T) {
@@ -156,7 +131,7 @@ func TestTransferSession_Destroy(t *testing.T) {
 	if err := ts.Destroy(); err != nil {
 		t.Fatalf("TransferSession.Destroy() returned an error: %v", err)
 	}
-	contents, _ := transferFS.ReadDir("/")
+	contents, _ := afero.ReadDir(ts.c.fs, "/")
 	if len(contents) > 0 {
 		t.Fatal("TransferSession.Destroy() didn't have the expected results")
 	}
@@ -237,11 +212,11 @@ func TestTransferSession_ChecksumSet(t *testing.T) {
 	set.Add("woodpigeon-pic.jpg", "53a64110e067b14394c142c09571bea0")
 
 	var (
-		want1 = `92c8ab01cecceb3bf0789c2cd8c7415a bird-sounds.mp3
-53a64110e067b14394c142c09571bea0 woodpigeon-pic.jpg
+		want1 = `92c8ab01cecceb3bf0789c2cd8c7415a objects/bird-sounds.mp3
+53a64110e067b14394c142c09571bea0 objects/woodpigeon-pic.jpg
 `
-		want2 = `53a64110e067b14394c142c09571bea0 woodpigeon-pic.jpg
-92c8ab01cecceb3bf0789c2cd8c7415a bird-sounds.mp3
+		want2 = `53a64110e067b14394c142c09571bea0 objects/woodpigeon-pic.jpg
+92c8ab01cecceb3bf0789c2cd8c7415a objects/bird-sounds.mp3
 `
 	)
 

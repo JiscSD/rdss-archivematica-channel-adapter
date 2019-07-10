@@ -5,12 +5,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/adapter"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/amclient"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3"
 
@@ -19,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/oklog/run"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -37,18 +32,23 @@ func NewCmdServer(logger logrus.FieldLogger, config *Config) *cobra.Command {
 }
 
 func doServer(logger logrus.FieldLogger, config *Config) error {
+	var registry *adapter.Registry
 	var g run.Group
 	{
-		s, err := server(logger, config)
+		var (
+			a   *adapter.Adapter
+			err error
+		)
+		a, registry, err = server(logger, config)
 		if err != nil {
 			return err
 		}
 
 		g.Add(func() error {
-			s.Run()
+			a.Run()
 			return nil
 		}, func(error) {
-			s.Stop()
+			a.Stop()
 		})
 	}
 	{
@@ -90,7 +90,7 @@ func doServer(logger logrus.FieldLogger, config *Config) error {
 		cancel := make(chan struct{})
 
 		g.Add(func() error {
-			err := interrupt(cancel)
+			err := interrupt(cancel, registry)
 			logger.Warn("Shutting down...")
 			return err
 		}, func(error) {
@@ -101,7 +101,7 @@ func doServer(logger logrus.FieldLogger, config *Config) error {
 	return g.Run()
 }
 
-func server(logger logrus.FieldLogger, config *Config) (*adapter.Adapter, error) {
+func server(logger logrus.FieldLogger, config *Config) (*adapter.Adapter, *adapter.Registry, error) {
 	incomingMessages := prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "rdss_archivematica_channel_adapter",
 		Name:      "incoming_messages_total",
@@ -113,7 +113,7 @@ func server(logger logrus.FieldLogger, config *Config) (*adapter.Adapter, error)
 	{
 		sess, err := awsSession(logger, config.AWS.DynamoDBProfile, config.AWS.DynamoDBEndpoint)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		dynamodbClient = dynamodb.New(sess)
 	}
@@ -122,13 +122,13 @@ func server(logger logrus.FieldLogger, config *Config) (*adapter.Adapter, error)
 	{
 		sess, err := awsSession(logger, config.AWS.SQSProfile, config.AWS.SQSEndpoint)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		sqsClient := sqs.New(sess)
 
 		sess, err = awsSession(logger, config.AWS.SNSProfile, config.AWS.SNSEndpoint)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		snsClient := sns.New(sess)
 
@@ -140,25 +140,15 @@ func server(logger logrus.FieldLogger, config *Config) (*adapter.Adapter, error)
 			config.Adapter.ValidationMode,
 			incomingMessages)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-	}
-
-	var amClient *amclient.Client
-	{
-		if err := amclient.TransferDir(config.AMClient.TransferDir); err != nil {
-			return nil, err
-		}
-		amClient = amclient.NewClient(
-			nil, config.AMClient.URL,
-			config.AMClient.User, config.AMClient.Key)
 	}
 
 	var s3Client s3.ObjectStorage
 	{
 		sess, err := awsSession(logger, config.AWS.S3Profile, config.AWS.S3Endpoint)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		s3Client = s3.New(sess)
 	}
@@ -168,7 +158,17 @@ func server(logger logrus.FieldLogger, config *Config) (*adapter.Adapter, error)
 		storage = adapter.NewStorageDynamoDB(dynamodbClient, config.Adapter.ProcessingTable)
 	}
 
-	return adapter.New(logger, brClient, amClient, s3Client, storage), nil
+	var registry *adapter.Registry
+	{
+		var err error
+		logger := logger.WithField("component", "registry")
+		registry, err = adapter.NewRegistry(logger, dynamodbClient, config.Adapter.RegistryTable)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return adapter.New(logger, brClient, s3Client, storage, registry), registry, nil
 }
 
 type logrusProxy struct {
@@ -195,15 +195,4 @@ func awsSession(logger logrus.FieldLogger, profile, endpoint string) (*session.S
 	}
 	options.Config.WithLogger(logrusProxy{logger: logger})
 	return session.NewSessionWithOptions(options)
-}
-
-func interrupt(cancel <-chan struct{}) error {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case sig := <-c:
-		return fmt.Errorf("received signal %s", sig)
-	case <-cancel:
-		return errors.New("canceled")
-	}
 }
