@@ -18,6 +18,10 @@ import (
 	"github.com/spf13/afero"
 )
 
+var (
+	UnknownTenantErr = errors.New("unknown tenantJiscID")
+)
+
 // handleMetadataCreateRequest handles the reception of Metadata Create
 // messages.
 func (c *Adapter) handleMetadataCreateRequest(msg *message.Message) error {
@@ -25,8 +29,12 @@ func (c *Adapter) handleMetadataCreateRequest(msg *message.Message) error {
 	if err != nil {
 		return err
 	}
+	amClient := c.registry.Get(msg.MessageHeader.TenantJiscID)
+	if amClient == nil {
+		return errors.Wrap(UnknownTenantErr, string(msg.MessageHeader.TenantJiscID))
+	}
 	researchObject := body.InferResearchObject()
-	id, err := c.startTransfer(researchObject)
+	id, err := c.startTransfer(amClient, researchObject)
 	if err != nil {
 		return err
 	}
@@ -35,7 +43,7 @@ func (c *Adapter) handleMetadataCreateRequest(msg *message.Message) error {
 		// We don't want to discard the message at this point.
 		c.logger.Errorf("Error trying to persist the research object: %v", err)
 	}
-	aipid, err := amclient.WaitUntilStored(c.ctx, c.amc, id)
+	aipid, err := amclient.WaitUntilStored(c.ctx, amClient, id)
 	if err != nil {
 		return err
 	}
@@ -75,6 +83,10 @@ func (c *Adapter) handleMetadataUpdateRequest(msg *message.Message) error {
 	if err != nil {
 		return err
 	}
+	amClient := c.registry.Get(msg.MessageHeader.TenantJiscID)
+	if amClient == nil {
+		return errors.Wrap(UnknownTenantErr, string(msg.MessageHeader.TenantJiscID))
+	}
 	researchObject := body.InferResearchObject()
 	// Determine if the message is pointing to a previous dataset.
 	var match *message.IdentifierRelationship
@@ -98,19 +110,19 @@ func (c *Adapter) handleMetadataUpdateRequest(msg *message.Message) error {
 	// At this point we know the previous transferID so we could reingest.
 	// In this first iteration we're just starting a new transfer.
 	logger.WithFields(logrus.Fields{"transferID": transferID, "TODO": "Implement real reingest."}).Debug("Reingesting transfer.")
-	_, err = c.startTransfer(researchObject)
+	_, err = c.startTransfer(amClient, researchObject)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Adapter) startTransfer(researchObject *message.ResearchObject) (string, error) {
+func (c *Adapter) startTransfer(amClient *amclient.Client, researchObject *message.ResearchObject) (string, error) {
 	// Ignore messages with no files listed.
 	if len(researchObject.ObjectFile) == 0 {
 		return "", nil
 	}
-	t, err := c.amc.TransferSession(researchObject.ObjectTitle)
+	t, err := amClient.TransferSession(researchObject.ObjectTitle)
 	if err != nil {
 		return "", err
 	}

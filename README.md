@@ -9,6 +9,7 @@
   - [Environment variables](#Environment-variables)
   - [Service dependencies](#Service-dependencies)
   - [AWS service client configuration](#AWS-service-client-configuration)
+  - [Registry of Archivematica pipelines](#Registry-of-Archivematica-pipelines)
 - [Metrics and runtime profiling data](#Metrics-and-runtime-profiling-data)
 - [Contributing](#Contributing)
 
@@ -56,13 +57,35 @@ Configuration from environment variables have precedence over file-based configu
 
 This application sits between multiple services and assumes access to the following resources and actions.
 
-| Resource      | API action                            | Configuration                                                                                                                                                     |
-|---------------|---------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| AWS SQS       | sqs:ReceiveMessage                    | adapter.queue_recv_main_addr<br/>aws.sqs_profile (optional)<br/>aws.sqs_endpoint (optional)                                                                       |
-| AWS SNS       | sns:Publish                           | adapter.queue_send_main_addr<br/>adapter.queue_send_invalid_addr<br/>adapter.queue_send_error_addr<br/>aws.sns_profile (optional)<br/>aws.sns_endpoint (optional) |
-| AWS DynamoDB  | dynamodb:GetItem<br/>dynamodb:PutItem | adapter.processing_table<br/>adapter.repository_table<br/>aws.dynamodb_profile (optional)<br/>aws.dynamodb_endpoint (optional)                                    |
-| AWS S3        | s3:GetObject                          | adapter.s3_profile<br/>adapter.s3_endpoint<br/><small>*(only needed when preservation requests point to S3 buckets)*</small>                                      |
-| Archivematica | N/A                                   | amclient.url<br/>amclient.user<br/>amclient.key<br/>amclient.transfer_dir                                                                                         |
+| Resource      | API action                                              | Configuration                                                                                                                                                     |
+|---------------|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| AWS SQS       | sqs:ReceiveMessage                                      | adapter.queue_recv_main_addr<br/>aws.sqs_profile (optional)<br/>aws.sqs_endpoint (optional)                                                                       |
+| AWS SNS       | sns:Publish                                             | adapter.queue_send_main_addr<br/>adapter.queue_send_invalid_addr<br/>adapter.queue_send_error_addr<br/>aws.sns_profile (optional)<br/>aws.sns_endpoint (optional) |
+| AWS DynamoDB  | dynamodb:GetItem<br/>dynamodb:PutItem<br/>dynamodb:Scan | adapter.processing_table<br/>adapter.repository_table<br/>adapter.registry_table<br/>aws.dynamodb_profile (optional)<br/>aws.dynamodb_endpoint (optional)         |
+| AWS S3        | s3:GetObject                                            | adapter.s3_profile<br/>adapter.s3_endpoint<br/><small>*(only needed when preservation requests point to S3 buckets.)*</small>                                     |
+| Archivematica | N/A                                                     | *(configured via the adapter.registry_table)*                                                                                                                     |
+
+SQS/SNS resources are expected to be provisioned by RDSS. The DynamoDB tables are local to the adapter and need to be created by the user. For example, they can be created using the AWS CLI as in the following example:
+
+```
+aws dynamodb create-table \
+    --table-name="rdss_archivematica_adapter_local_data_repository" \
+    --attribute-definitions="AttributeName=ID,AttributeType=S" \
+    --key-schema="AttributeName=ID,KeyType=HASH" \
+    --billing-mode="PAY_PER_REQUEST"
+
+aws dynamodb create-table \
+    --table-name="rdss_archivematica_adapter_processing_state" \
+    --attribute-definitions="AttributeName=objectUUID,AttributeType=S" \
+    --key-schema="AttributeName=objectUUID,KeyType=HASH" \
+    --billing-mode="PAY_PER_REQUEST"
+
+aws dynamodb create-table \
+    --table-name="rdss_archivematica_adapter_registry" \
+    --attribute-definitions="AttributeName=tenantJiscID,AttributeType=S" \
+    --key-schema="AttributeName=tenantJiscID,KeyType=HASH" \
+    --billing-mode="PAY_PER_REQUEST"
+```
 
 ### AWS service client configuration
 
@@ -83,6 +106,51 @@ This can be useful under a variety of scenarios:
 
 - Deployment of alternative services like LocalStack, Minio, etc...
 - Applying different credentials, e.g. assuming a IAM role in the SQS/SNS clients.
+
+### Registry of Archivematica pipelines
+
+The adapter uses a registry of Archivematica pipelines stored in DynamoDB (table `adapter.repository_table`) that looks like the following:
+
+| tenantJiscID | url                    | user | key      | transferDir        |
+|--------------|------------------------|------|----------|--------------------|
+| 1            | http://192.168.1.1/api | user | juoCah3o | /mnt/share/tenant1 |
+| 2            | http://192.168.1.2/api | user | Ixie9aid | /mnt/share/tenant2 |
+
+It is possible to create, delete and scan items in [various ways](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GettingStartedDynamoDB.html), including the AWS Management Console. The folowing is an example of item creation using the AWS CLI:
+
+```
+env \
+    AWS_DEFAULT_REGION="us-east-1" \
+    AWS_ACCESS_KEY_ID="1234" \
+    AWS_SECRET_ACCESS_KEY="5678" \
+        aws dynamodb put-item \
+            --table-name="rdss_archivematica_adapter_registry"
+            --item "file:///tmp/test-registry-item.json"
+```
+
+The previous command loads the record in `/tmp/test-registry-item.json`:
+
+```json
+{
+    "tenantJiscID": {"S": "3"},
+    "url": {"S": "http://192.168.1.3/api"},
+    "user": {"S": "user"},
+    "key": {"S": "eh6eeDuu"},
+    "transferDir": {"S": "/mnt/share/tenant3"}
+}
+```
+
+The adapter loads the registry in three cases:
+
+- When the application starts.
+- Every 10 seconds once the application has been initialized properly.
+- When a `USR1` signal is received, e.g.:
+
+      killall -s SIGUSR1 rdss-archivematica-channel-adapter
+
+Send the `USR2` signal to log the current instances loaded:
+
+    killall -s SIGUSR2 rdss-archivematica-channel-adapter
 
 ## Metrics and runtime profiling data
 
