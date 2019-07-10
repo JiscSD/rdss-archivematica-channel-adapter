@@ -15,16 +15,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-var transferFS *afero.Afero
-
-func TransferDir(path string) error {
-	if path == "" {
-		return errors.New("transfer directory is undefined")
-	}
-	transferFS = &afero.Afero{Fs: afero.NewBasePathFs(afero.NewOsFs(), path)}
-	return nil
-}
-
 // TransferSession is a convenience tool to make it easier to create and submit
 // transfers.
 //
@@ -36,7 +26,7 @@ type TransferSession struct {
 	c *Client
 
 	// Transfer's filesystem. This is based off a temporary directory that it's
-	// automatically created inside `transferFS`.
+	// automatically created inside `c.fs`.
 	fs *afero.Afero
 
 	// Name of the transfer.
@@ -50,24 +40,41 @@ type TransferSession struct {
 
 // tmpfs creates a new temporary directory on the given filesystem and returns
 // it as a new filesystem.
-func tmpfs(fs *afero.Afero) (*afero.Afero, error) {
+func tmpfs(fs afero.Fs) (*afero.Afero, error) {
 	if fs == nil {
 		return nil, errors.New("filesystem is nil")
 	}
-	if ok, err := fs.DirExists("/"); err != nil || !ok {
-		return nil, fmt.Errorf("filesystem is not accesible: %v", err)
+
+	// Try to guess the full path.
+	basePath := "unknown"
+	basePathFs, ok := fs.(*afero.BasePathFs)
+	if ok {
+		basePath = afero.FullBaseFsPath(basePathFs, "")
 	}
+
+	ok, err := afero.DirExists(fs, "/")
+	if err != nil {
+		return nil, fmt.Errorf("filesystem is not accesible: %v (%s)", err, basePath)
+	}
+	if !ok {
+		return nil, fmt.Errorf("filesystem is not accesible (%s)", basePath)
+	}
+
 	const prefix = "amclientTransfer"
 	tmpdir, err := afero.TempDir(fs, "/", prefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating temporary directory")
 	}
+
 	return &afero.Afero{Fs: afero.NewBasePathFs(fs, tmpdir)}, nil
 }
 
 // NewTransferSession returns a pointer to a new TransferSession.
 func NewTransferSession(c *Client, name string) (*TransferSession, error) {
-	fs, err := tmpfs(transferFS)
+	if c.fs == nil {
+		return nil, errors.New("transfer session not created because the base filesystem is not assigned")
+	}
+	fs, err := tmpfs(c.fs)
 	if err != nil {
 		return nil, errors.Wrap(err, "transfer session cannot initialize temporary directory")
 	}
@@ -79,24 +86,14 @@ func NewTransferSession(c *Client, name string) (*TransferSession, error) {
 	return ts, nil
 }
 
-// TransferSession returns a new transfer session.
-func (c *Client) TransferSession(name string) (*TransferSession, error) {
-	return NewTransferSession(c, name)
-}
-
 // fullPath returns the absolute path of the transfer directory.
-//
-// TODO: there should be a better way to do this, investigate.
 func (s *TransferSession) fullPath() string {
-	return filepath.Join(
-		afero.FullBaseFsPath(transferFS.Fs.(*afero.BasePathFs), ""),
-		afero.FullBaseFsPath(s.fs.Fs.(*afero.BasePathFs), ""),
-	)
+	return afero.FullBaseFsPath(s.fs.Fs.(*afero.BasePathFs), "")
 }
 
 func (s *TransferSession) path() string {
 	rel, err := filepath.Rel(
-		afero.FullBaseFsPath(transferFS.Fs.(*afero.BasePathFs), "/"),
+		afero.FullBaseFsPath(s.c.fs.(*afero.BasePathFs), "/"),
 		s.fullPath(),
 	)
 	if err != nil {
@@ -391,6 +388,7 @@ func (c *ChecksumSet) Write() error {
 	defer writer.Flush()
 
 	for name, sum := range c.values {
+		name = "objects/" + name // See https://github.com/artefactual/archivematica/pull/1333.
 		if err := writer.Write([]string{sum, name}); err != nil {
 			return err
 		}

@@ -3,7 +3,6 @@ package adapter
 import (
 	"context"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/amclient"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3"
@@ -20,31 +19,31 @@ const archivematicaProcessingConfig = "automated"
 // operations to Archivematica and return the results. It employs an internal
 // storage.
 type Adapter struct {
-	logger  logrus.FieldLogger
-	broker  *broker.Broker
-	amc     *amclient.Client
-	s3      s3.ObjectStorage
-	storage Storage
-
-	ctx    context.Context
-	cancel context.CancelFunc
-	stop   chan chan struct{}
+	logger   logrus.FieldLogger
+	broker   *broker.Broker
+	s3       s3.ObjectStorage
+	storage  Storage
+	registry *Registry
+	ctx      context.Context
+	cancel   context.CancelFunc
+	stop     chan chan struct{}
 }
 
 func New(
 	logger logrus.FieldLogger,
 	broker *broker.Broker,
-	amc *amclient.Client,
 	s3 s3.ObjectStorage,
-	storage Storage) *Adapter {
+	storage Storage,
+	registry *Registry,
+) *Adapter {
 
 	c := &Adapter{
-		logger:  logger,
-		broker:  broker,
-		amc:     amc,
-		s3:      s3,
-		storage: storage,
-		stop:    make(chan chan struct{}),
+		logger:   logger,
+		broker:   broker,
+		s3:       s3,
+		storage:  storage,
+		registry: registry,
+		stop:     make(chan chan struct{}),
 	}
 
 	c.ctx, c.cancel = context.WithCancel(context.Background())
@@ -61,13 +60,11 @@ func (c *Adapter) Run() {
 }
 
 func (c *Adapter) loop() {
-	select {
-	case ch := <-c.stop:
-		c.cancel()
-		c.broker.Stop()
-		close(ch)
-		return
-	}
+	ch := <-c.stop
+	c.cancel()
+	c.registry.Stop()
+	c.broker.Stop()
+	close(ch)
 }
 
 func (c *Adapter) Stop() {
