@@ -20,34 +20,6 @@ const defaultConfig = `# RDSS Archivematica Channel Adapter
 #
 level = "INFO"
 
-################################## AMCLIENT ###################################
-
-[amclient]
-
-#
-# Archivematica API - URL, e.g.: "https://my.archivematica.internal:9000".
-#
-url = ""
-
-#
-# Archivematica API - Username, e.g.: "demo".
-#
-user = ""
-
-#
-# Archivematica API - Key, e.g.: "eid3Aitheijoo1ohce2pho4eiDei0lah".
-#
-key = ""
-
-#
-# The base directory where transfers will be downloaded. It must match the path
-# of the default transfer source location as defined in Archivematica Storage
-# Service. For a development environment, the default is "/home". Transfers
-# will be downloaded into temporary directories created inside the
-# "TRANSFER_DIR".
-#
-transfer_dir = ""
-
 ################################## ADAPTER ####################################
 
 [adapter]
@@ -61,6 +33,11 @@ processing_table = "rdss_archivematica_adapter_processing_state"
 # Name of the table used to store the local data repository (DynamoDB).
 #
 repository_table = "rdss_archivematica_adapter_local_data_repository"
+
+#
+# Name of the table used to store the Archivematica registry (DynamoDB).
+#
+registry_table = "rdss_archivematica_adapter_registry"
 
 #
 # Message validation supports three modes:
@@ -119,16 +96,10 @@ type Config struct {
 		Level string `mapstructure:"level"`
 	} `mapstructure:"logging"`
 
-	AMClient struct {
-		URL         string `mapstructure:"url"`
-		User        string `mapstructure:"user"`
-		Key         string `mapstructure:"key"`
-		TransferDir string `mapstructure:"transfer_dir"`
-	} `mapstructure:"amclient"`
-
 	Adapter struct {
 		RepositoryTable      string `mapstructure:"repository_table"`
 		ProcessingTable      string `mapstructure:"processing_table"`
+		RegistryTable        string `mapstructure:"registry_table"`
 		ValidationMode       string `mapstructure:"validation"`
 		QueueRecvMainAddr    string `mapstructure:"queue_recv_main_addr"`
 		QueueSendMainAddr    string `mapstructure:"queue_send_main_addr"`
