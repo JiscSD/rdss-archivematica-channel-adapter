@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"os"
+	"strconv"
 
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/adapter"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker"
@@ -53,10 +55,10 @@ func doServer(logger logrus.FieldLogger, config *Config) error {
 	}
 	{
 		ln, err := net.Listen("tcp", ":6060")
-		logger.WithField("addr", ln.Addr().String()).Info("HTTP server listening")
 		if err != nil {
 			return err
 		}
+		logger.WithField("addr", ln.Addr().String()).Info("HTTP server listening")
 
 		g.Add(func() error {
 			mux := http.NewServeMux()
@@ -135,7 +137,7 @@ func server(logger logrus.FieldLogger, config *Config) (*adapter.Adapter, *adapt
 		brClient, err = broker.New(
 			logger,
 			sqsClient, config.Adapter.QueueRecvMainAddr,
-			snsClient, config.Adapter.QueueSendMainAddr, config.Adapter.QueueSendErrorAddr, config.Adapter.QueueSendInvalidAddr,
+			snsClient, config.Adapter.QueueSendMainAddr, config.Adapter.QueueSendInvalidAddr, config.Adapter.QueueSendErrorAddr,
 			dynamodbClient, config.Adapter.RepositoryTable,
 			config.Adapter.ValidationMode,
 			incomingMessages)
@@ -181,6 +183,10 @@ func (l logrusProxy) Log(args ...interface{}) {
 
 // awsSession returns a session using NewSessionWithOptions meaning that it
 // relies on the SDK defaults but also the user config files and environment.
+//
+// AWS_S3_FORCE_PATH_STYLE is a made-up environment string that the SDK does
+// not look up. This could be done via configuration instead but I don't want
+// to add more surface to the config layer that what's really needed in prod.
 func awsSession(logger logrus.FieldLogger, profile, endpoint string) (*session.Session, error) {
 	options := session.Options{}
 	if profile != "" {
@@ -188,6 +194,10 @@ func awsSession(logger logrus.FieldLogger, profile, endpoint string) (*session.S
 	}
 	if endpoint != "" {
 		options.Config.WithEndpoint(endpoint)
+	}
+	if res, ok := os.LookupEnv("AWS_S3_FORCE_PATH_STYLE"); ok {
+		enabled, _ := strconv.ParseBool(res)
+		options.Config.WithS3ForcePathStyle(enabled)
 	}
 	if logrus.GetLevel() == logrus.DebugLevel {
 		// options.Config.WithLogLevel(aws.LogDebug | aws.LogDebugWithRequestErrors | aws.LogDebugWithRequestRetries)

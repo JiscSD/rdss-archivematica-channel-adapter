@@ -131,15 +131,15 @@ func (s *TransferSession) Start() (string, error) {
 	ctx := context.Background()
 
 	if err := s.createMetadataDir(); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "cannot create metadata dir")
 	}
 
 	if err := s.Metadata.Write(); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "cannot write metadata")
 	}
 
 	if err := s.createChecksumsFiles(); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "cannot create checksum files")
 	}
 
 	req := &PackageCreateRequest{
