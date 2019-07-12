@@ -19,10 +19,17 @@ install:
 	@env CGO_ENABLED=0 go install -ldflags "-X github.com/JiscRDSS/rdss-archivematica-channel-adapter/version.VERSION=${VERSION}"
 
 test:
-	@go test ./...
+	@go test -short ./...
 
 testrace:
-	@go test -race ./...
+	@go test -short -race ./...
+
+test-integration: install
+	docker-compose --file ./integration/docker-compose.yml up -d --force-recreate
+	docker-compose --file ./integration/docker-compose.yml ps
+	integration/scripts/wait.sh
+	integration/scripts/provision.sh
+	go test -v ./integration/...
 
 fmt:
 	@test -z "$(shell gofmt -l -d -e . | tee /dev/stderr)"

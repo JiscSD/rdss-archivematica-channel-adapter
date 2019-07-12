@@ -1,0 +1,7 @@
+{
+  "tenantJiscID": {"S": "1"},
+  "url": {"S": "http://localhost:62080/api"},
+  "user": {"S": "invalid"},
+  "key": {"S": "credentials"},
+  "transferDir": {"S": "/home/jesus/.am/ss-location-data/amclient-tenant-1"}
+}

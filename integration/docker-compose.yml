@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+
+  localstack:
+    image: "localstack/localstack:latest"
+    ports:
+      - "4567-4584:4567-4584"
+      - "8080:8080"
+    environment:
+      - "SERVICES=s3,dynamodb,sqs,sns"
