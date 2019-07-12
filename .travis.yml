@@ -21,6 +21,7 @@ notifications:
 cache:
   directories:
     - $HOME/.cache/go-build
+    - $HOME/.local
     - $HOME/gopath/pkg/mod
 
 jobs:
@@ -46,5 +47,5 @@ jobs:
         - docker
       script:
         - go mod download
-        - make install
-        - docker ps
+        - pip install --user --quiet awscli
+        - make test-integration
