@@ -26,7 +26,6 @@ The following example runs the application using the Docker image.
     $ docker run \
         --tty --rm \
         --env "RDSS_ARCHIVEMATICA_ADAPTER_LOGGING.LEVEL=WARNING" \
-        --restart always \
         artefactual/rdss-archivematica-channel-adapter \
             server
 
@@ -51,8 +50,8 @@ Configuration from environment variables have precedence over file-based configu
 
 - `RDSS_ARCHIVEMATICA_ADAPTER_LOGGING.LEVEL=DEBUG`<br />
   (section: `LOGGING`, attribute: `LEVEL`, value: `DEBUG`)
-- `RDSS_ARCHIVEMATICA_ADAPTER_MESSAGE.VALIDATION=FALSE`<br />
-  (section: `MESSAGE`, attribute: `VALIDATION`, value: `FALSE`)
+- `RDSS_ARCHIVEMATICA_ADAPTER_ADAPTER.VALIDATION_MODE=strict`<br />
+  (section: `ADAPTER`, attribute: `VALIDATION_MODE`, value: `strict`)
 
 ### Service dependencies
 
@@ -63,7 +62,7 @@ This application sits between multiple services and assumes access to the follow
 | AWS SQS       | sqs:ReceiveMessage                                      | adapter.queue_recv_main_addr<br/>aws.sqs_profile (optional)<br/>aws.sqs_endpoint (optional)                                                                       |
 | AWS SNS       | sns:Publish                                             | adapter.queue_send_main_addr<br/>adapter.queue_send_invalid_addr<br/>adapter.queue_send_error_addr<br/>aws.sns_profile (optional)<br/>aws.sns_endpoint (optional) |
 | AWS DynamoDB  | dynamodb:GetItem<br/>dynamodb:PutItem<br/>dynamodb:Scan | adapter.processing_table<br/>adapter.repository_table<br/>adapter.registry_table<br/>aws.dynamodb_profile (optional)<br/>aws.dynamodb_endpoint (optional)                                    |
-| AWS S3        | s3:GetObject                                            | adapter.s3_profile<br/>adapter.s3_endpoint<br/><small>*(only needed when preservation requests point to S3 buckets.)*</small>
+| AWS S3        | s3:GetObject                                            | adapter.s3_profile<br/>adapter.s3_endpoint<br/><small>*(only needed when preservation requests point to S3 buckets)*</small>
 | Archivematica | N/A                                                     | *(configured via the adapter.registry_table)*
 
 ### AWS service client configuration
