@@ -8,7 +8,7 @@ builds:
 - ldflags:
   # -s (Omit the symbol table and debug information)
   # -w (Omit the DWARF symbol table)
-  - -s -w -X github.com/JiscRDSS/rdss-archivematica-channel-adapter/version.VERSION={{.Version}}"
+  - -s -w -X github.com/JiscRDSS/rdss-archivematica-channel-adapter/version.VERSION={{.Version}}
   env:
   # Disable CGO and link C bindings statically
   # See https://github.com/golang/go/issues/26492 for more.
