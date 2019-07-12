@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/amclient"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3"
-	"github.com/pkg/errors"
-	"github.com/twinj/uuid"
 
 	"github.com/cenkalti/backoff/v3"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
+	"github.com/twinj/uuid"
 )
 
 var (
@@ -31,12 +32,12 @@ func (c *Adapter) handleMetadataCreateRequest(msg *message.Message) error {
 	}
 	amClient := c.registry.Get(msg.MessageHeader.TenantJiscID)
 	if amClient == nil {
-		return errors.Wrap(UnknownTenantErr, string(msg.MessageHeader.TenantJiscID))
+		return errors.Wrap(UnknownTenantErr, strconv.Itoa(int(msg.MessageHeader.TenantJiscID)))
 	}
 	researchObject := body.InferResearchObject()
 	id, err := c.startTransfer(amClient, researchObject)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "transfer cannot be started")
 	}
 	c.logger.Debugf("The transfer has started successfully, id: %s", id)
 	if err := c.storage.AssociateResearchObject(c.ctx, researchObject.ObjectUUID.String(), id); err != nil {
@@ -124,7 +125,7 @@ func (c *Adapter) startTransfer(amClient *amclient.Client, researchObject *messa
 	}
 	t, err := amClient.TransferSession(researchObject.ObjectTitle)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "transfer session cannot be initialized")
 	}
 	t.WithProcessingConfig(archivematicaProcessingConfig)
 	// Process dataset metadata.

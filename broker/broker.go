@@ -128,10 +128,23 @@ func (b *Broker) Run() {
 	b.loop()
 }
 
-// processor launches a processing goroutine for each message received.
+// processor of delivered messages. Processing is performed in two phases:
+//
+// Phase 1: extract the payload, validate it and store the ID in the local data
+// repository. This is a blocking operation because we want to prevent the
+// consuming from processing until we have a chance to update the local data
+// repository.
+//
+// Phase 2: launch a goroutine to handle the message to a handler and perform
+// the rest of the processing asynchronously.
 func (b *Broker) processor() {
 	for m := range b.messages {
-		go b.processMessage(m)
+		msg, err := b.openMessage(m)
+		if err != nil {
+			b.deleteMessage(m.ReceiptHandle)
+			continue
+		}
+		go b.processMessage(m.ReceiptHandle, msg)
 	}
 }
 
@@ -164,7 +177,9 @@ func (b *Broker) loop() {
 	}
 }
 
-func (b *Broker) processMessage(m *sqs.Message) {
+// openMessage performs initial validation and returns the underlying RDSS
+// message.
+func (b *Broker) openMessage(m *sqs.Message) (*message.Message, error) {
 	b.incomingMessages.Inc()
 
 	// Payload unmarshal.
@@ -172,34 +187,48 @@ func (b *Broker) processMessage(m *sqs.Message) {
 	err := json.Unmarshal([]byte(*m.Body), msg)
 	if err != nil {
 		b.invalidMessage(m, bErrors.NewWithError(bErrors.GENERR001, err))
-		return
+		return nil, err
 	}
 
 	// Payload validation.
 	if err := b.validate(msg); err != nil {
 		b.invalidMessage(m, bErrors.NewWithError(bErrors.GENERR001, err))
-		return
+		return nil, err
 	}
 
+	seen, err := b.seenBeforeOrStore(msg)
+
+	// Not having access to the local data repository should not be a reason
+	// to prevent its processing hence we return nil.
+	if err != nil {
+		b.logger.Warning("Local data repository check failed: ", err)
+		return nil, err
+	}
+
+	// Giving up on known messages.
+	if seen {
+		b.logger.Warning("Message found in the local data repository.")
+		return nil, errors.New("message seen")
+	}
+
+	return msg, nil
+}
+
+// processMessage handles the message to the handler. The message is deleted
+// from the queue when the handler completes without errors.
+func (b *Broker) processMessage(receiptHandle *string, msg *message.Message) {
 	logger := b.logger.WithFields(logrus.Fields{
 		"messageID": msg.ID(),
 		"type":      msg.MessageHeader.MessageType.String(),
 		"class":     msg.MessageHeader.MessageClass.String(),
 	})
 
-	// Do nothing if the message has been seen before.
-	// Best effort, i.e. we continue on errors checking the local repo repo.
-	seen, err := b.seenBeforeOrStore(msg)
-	if err != nil {
-		logger.Error("Local data repository check failed: ", err)
-	} else if seen {
-		logger.Warning("Message found in the local data repository.")
-		b.deleteMessage(m.ReceiptHandle)
-		return
-	}
+	var (
+		err error
+		wg  sync.WaitGroup
+	)
 
 	// Run the handler in panic recovery mode.
-	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -214,11 +243,11 @@ func (b *Broker) processMessage(m *sqs.Message) {
 
 	if err != nil {
 		logger.Error("Handler failure: ", err)
-		b.errorMessage(msg, bErrors.NewWithError(bErrors.GENERR006, err), m.ReceiptHandle)
+		b.errorMessage(msg, bErrors.NewWithError(bErrors.GENERR006, err), receiptHandle)
 		return
 	}
 
-	b.deleteMessage(m.ReceiptHandle)
+	b.deleteMessage(receiptHandle)
 }
 
 // deleteMessage does best effort to delete a message from SQS. It does not
@@ -272,7 +301,6 @@ func (b *Broker) validate(msg *message.Message) error {
 
 // invalidMessage puts a message into the Invalid Message Queue.
 func (b *Broker) invalidMessage(m *sqs.Message, specErr error) {
-	defer b.deleteMessage(m.ReceiptHandle)
 	if err := b.publishMessage(b.snsTopicInvalidARN, *m.Body); err != nil {
 		b.logger.Error("A message could not be sent to the Invalid Message Queue: ", err)
 	}
