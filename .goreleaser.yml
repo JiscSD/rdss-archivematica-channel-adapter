@@ -22,6 +22,8 @@ builds:
 
 archives:
 - format: binary
+  # Same as default but .Version without stripped "v" prefix.
+  name_template: "{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
 
 dockers:
 - goos: linux
