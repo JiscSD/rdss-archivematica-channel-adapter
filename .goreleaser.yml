@@ -46,7 +46,7 @@ dockers:
   - "--label=maintainer=Jesús García Crespo <jesus@sevein.com>"
 
 checksum:
-  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  name_template: "{{ .ProjectName }}_v{{ .Version }}_checksums.txt"
   algorithm: sha256
 
 changelog:
