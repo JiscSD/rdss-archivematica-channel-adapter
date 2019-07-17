@@ -61,16 +61,12 @@ validation_mode = "strict"
 #
 # The adapter will subscribe to this queue.
 #
-# Assuming an IAM Role is not possible yet!
-#
 queue_recv_main_addr = ""
 
 #
 # AWS SNS topic ARN, e.g. "arn:aws:sqs:us-east-2:444455556666:queue1".
 #
 # The adapter will publish to this queue.
-#
-# Assuming an IAM Role is not possible yet!
 #
 queue_send_main_addr = ""
 queue_send_error_addr = ""

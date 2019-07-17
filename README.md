@@ -19,7 +19,7 @@ RDSS Archivematica Channel Adapter is an implementation of a channel adapter for
 
 ## Installation
 
-Download the binary from the [Releases](https://github.com/JiscRDSS/rdss-archivematica-channel-adapter/releases) page. You can use a process manager such [systemd](https://www.linode.com/docs/quick-answers/linux/start-service-at-boot/) to run it.
+This application is distributed as a single static binary file that you can download from the [Releases](https://github.com/JiscRDSS/rdss-archivematica-channel-adapter/releases) page. You can use a process manager such [systemd](https://www.linode.com/docs/quick-answers/linux/start-service-at-boot/) to run it.
 
 The following example runs the application using the Docker image.
 
@@ -55,7 +55,7 @@ Configuration from environment variables have precedence over file-based configu
 
 ### Service dependencies
 
-This application sits between multiple services and assumes access to the following resources and actions:
+This application sits between multiple services and assumes access to the following resources and actions.
 
 | Resource      | API action                                              | Configuration                                                                                                                                                     |
 |---------------|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -64,6 +64,28 @@ This application sits between multiple services and assumes access to the follow
 | AWS DynamoDB  | dynamodb:GetItem<br/>dynamodb:PutItem<br/>dynamodb:Scan | adapter.processing_table<br/>adapter.repository_table<br/>adapter.registry_table<br/>aws.dynamodb_profile (optional)<br/>aws.dynamodb_endpoint (optional)                                    |
 | AWS S3        | s3:GetObject                                            | adapter.s3_profile<br/>adapter.s3_endpoint<br/><small>*(only needed when preservation requests point to S3 buckets)*</small>
 | Archivematica | N/A                                                     | *(configured via the adapter.registry_table)*
+
+SQS/SNS resources are expected to be provisioned by RDSS. The DynamoDB tables are local to the adapter and need to be created by the user. For example, they can be created using the AWS CLI as in the following example:
+
+```
+aws dynamodb create-table \
+    --table-name="rdss_archivematica_adapter_local_data_repository" \
+    --attribute-definitions="AttributeName=ID,AttributeType=S" \
+    --key-schema="AttributeName=ID,KeyType=HASH" \
+    --billing-mode="PAY_PER_REQUEST"
+
+aws dynamodb create-table \
+    --table-name="rdss_archivematica_adapter_processing_state" \
+    --attribute-definitions="AttributeName=objectUUID,AttributeType=S" \
+    --key-schema="AttributeName=objectUUID,KeyType=HASH" \
+    --billing-mode="PAY_PER_REQUEST"
+
+aws dynamodb create-table \
+    --table-name="rdss_archivematica_adapter_registry" \
+    --attribute-definitions="AttributeName=tenantJiscID,AttributeType=S" \
+    --key-schema="AttributeName=tenantJiscID,KeyType=HASH" \
+    --billing-mode="PAY_PER_REQUEST"
+```
 
 ### AWS service client configuration
 
