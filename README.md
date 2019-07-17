@@ -41,7 +41,7 @@ Inject custom configuration attributes via a configuration file and/or environme
 
 The configuration file can be indicated via the `--config` command-line argument. When undefined, the application attempts to read from one of the following locations:
 
-- `$HOME/.rdss-archivematica-channel-adapter.toml`
+- `$HOME/config/rdss-archivematica-channel-adapter.toml`
 - `/etc/archivematica/rdss-archivematica-channel-adapter.toml`
 
 ### Environment variables

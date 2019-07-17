@@ -142,23 +142,29 @@ func (c Config) String() string {
 func loadConfig(c *Config) error {
 	v := viper.New()
 
+	v.SetEnvPrefix("RDSS_ARCHIVEMATICA_ADAPTER")
+	v.AutomaticEnv()
+
+	v.SetConfigName("rdss-archivematica-channel-adapter")
+	v.SetConfigType("toml")
+	v.AddConfigPath("$HOME/.config/")
+	v.AddConfigPath("/etc/archivematica/")
+
 	if configFile != "" {
 		v.SetConfigFile(configFile)
 	}
 
-	v.SetConfigName(".rdss-archivematica-channel-adapter")
-	v.AddConfigPath("$HOME")
-	v.AddConfigPath("/etc/archivematica")
-	v.SetEnvPrefix("RDSS_ARCHIVEMATICA_ADAPTER")
-	v.AutomaticEnv()
-	v.SetConfigType("toml")
-
 	// Read our default configuration.
 	if err := v.ReadConfig(strings.NewReader(defaultConfig)); err != nil {
-		return errors.Wrap(err, "cannot read default configuration")
+		panic(err) // Not in the user path.
 	}
 
-	v.MergeInConfig()
+	// Include configuration file provided by the user.
+	if err := v.MergeInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return err
+		}
+	}
 
 	if err := v.Unmarshal(&c); err != nil {
 		return errors.Wrap(err, "configuration unmarshaling failed")
