@@ -82,6 +82,9 @@ func TestNewTransferSession(t *testing.T) {
 	if have, want := ts.name, name; have != want {
 		t.Fatalf("NewTransferSession() unexpected name; have %s, want %s", have, want)
 	}
+	if have, want := ts.processingConfig, defaultProcessingConfig; have != want {
+		t.Fatalf("NewTransferSession() unexpected processingConfig; have %s, want %s", have, want)
+	}
 	if ts.Metadata == nil || ts.ChecksumsMD5 == nil || ts.ChecksumsSHA1 == nil || ts.ChecksumsSHA256 == nil {
 		t.Fatal("NewTransferSession() returned a TransferSession not initialized propery")
 	}
@@ -90,6 +93,14 @@ func TestNewTransferSession(t *testing.T) {
 	}
 	if contents, err := afero.ReadDir(ts.fs, "/"); err != nil || len(contents) > 0 {
 		t.Fatal("NewTransferSession() has an unexpected filesystem")
+	}
+}
+
+func TestTransferSession_WithProcessingConfig(t *testing.T) {
+	ts := newTransferSession(t, "Test").WithProcessingConfig("foobar")
+
+	if have, want := ts.processingConfig, "foobar"; have != want {
+		t.Fatalf("WithProcessingConfig() unexpected config; have %s, want %s", have, want)
 	}
 }
 
