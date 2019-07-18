@@ -9,11 +9,12 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
+
+const defaultProcessingConfig = "default"
 
 var transferFS *afero.Afero
 
@@ -41,6 +42,8 @@ type TransferSession struct {
 
 	// Name of the transfer.
 	name string
+
+	processingConfig string
 
 	Metadata        *MetadataSet
 	ChecksumsMD5    *ChecksumSet
@@ -71,7 +74,12 @@ func NewTransferSession(c *Client, name string) (*TransferSession, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "transfer session cannot initialize temporary directory")
 	}
-	ts := &TransferSession{c: c, fs: fs, name: name}
+	ts := &TransferSession{
+		c:                c,
+		fs:               fs,
+		name:             name,
+		processingConfig: defaultProcessingConfig,
+	}
 	ts.Metadata = NewMetadataSet(ts.fs)
 	ts.ChecksumsMD5 = NewChecksumSet("md5", ts.fs)
 	ts.ChecksumsSHA1 = NewChecksumSet("sha1", ts.fs)
@@ -82,6 +90,11 @@ func NewTransferSession(c *Client, name string) (*TransferSession, error) {
 // TransferSession returns a new transfer session.
 func (c *Client) TransferSession(name string) (*TransferSession, error) {
 	return NewTransferSession(c, name)
+}
+
+func (s *TransferSession) WithProcessingConfig(name string) *TransferSession {
+	s.processingConfig = name
+	return s
 }
 
 // fullPath returns the absolute path of the transfer directory.
@@ -118,20 +131,6 @@ func (s *TransferSession) Create(name string) (afero.File, error) {
 	return f, nil
 }
 
-// ProcessingConfig includes a processing configuration in the transfer.
-func (s *TransferSession) ProcessingConfig(name string) error {
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	config, _, err := s.c.ProcessingConfig.Get(ctx, name)
-	if err != nil {
-		return err
-	}
-
-	return s.fs.SafeWriteReader("/processingMCP.xml", config)
-}
-
 // Start the transfer using the Package API endpoint. This API is still in beta.
 func (s *TransferSession) Start() (string, error) {
 	ctx := context.Background()
@@ -148,7 +147,11 @@ func (s *TransferSession) Start() (string, error) {
 		return "", err
 	}
 
-	req := &PackageCreateRequest{Name: s.name, Path: s.path()}
+	req := &PackageCreateRequest{
+		Name:             s.name,
+		Path:             s.path(),
+		ProcessingConfig: s.processingConfig,
+	}
 	payload, _, err := s.c.Package.Create(ctx, req)
 	if err != nil {
 		return "", err

@@ -84,11 +84,7 @@ func (c *Adapter) startTransfer(researchObject *message.ResearchObject) (string,
 	if err != nil {
 		return "", err
 	}
-	// Download automated workflow.
-	err = t.ProcessingConfig(archivematicaProcessingConfig)
-	if err != nil {
-		c.logger.Warningf("Failed to download `%s` processing configuration: %s", archivematicaProcessingConfig, err)
-	}
+	t.WithProcessingConfig(archivematicaProcessingConfig)
 	// Process dataset metadata.
 	describeDataset(t, researchObject)
 	for _, file := range researchObject.ObjectFile {
