@@ -5,7 +5,7 @@ set -e
 hash rdss-archivematica-channel-adapter 2>/dev/null || (cd ../.. && make install)
 
 env \
-	RDSS_ARCHIVEMATICA_ADAPTER_LOGGING.LEVEL="debug" \
+	RDSS_ARCHIVEMATICA_ADAPTER_LOGGING.LEVEL="info" \
 	RDSS_ARCHIVEMATICA_ADAPTER_ADAPTER.PROCESSING_TABLE="rdss_archivematica_adapter_processing_state" \
 	RDSS_ARCHIVEMATICA_ADAPTER_ADAPTER.REPOSITORY_TABLE="rdss_archivematica_adapter_local_data_repository" \
 	RDSS_ARCHIVEMATICA_ADAPTER_ADAPTER.REGISTRY_TABLE="rdss_archivematica_adapter_registry" \
