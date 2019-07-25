@@ -20,6 +20,12 @@ const defaultConfig = `# RDSS Archivematica Channel Adapter
 #
 level = "INFO"
 
+#
+# Logging format.
+# Supported values: "text", "json"
+#
+format = "text"
+
 ################################## ADAPTER ####################################
 
 [adapter]
@@ -96,7 +102,8 @@ type Config struct {
 	v *viper.Viper
 
 	Logging struct {
-		Level string `mapstructure:"level"`
+		Level  string `mapstructure:"level"`
+		Format string `mapstructure:"format"`
 	} `mapstructure:"logging"`
 
 	Adapter struct {

@@ -39,7 +39,7 @@ func RootCommand(out, stderr io.Writer) *cobra.Command {
 		if verbosityLevel == "" {
 			verbosityLevel = config.Logging.Level
 		}
-		if err := setUpLogger(out, verbosityLevel); err != nil {
+		if err := setUpLogger(out, verbosityLevel, config.Logging.Format); err != nil {
 			return err
 		}
 
@@ -57,15 +57,31 @@ func RootCommand(out, stderr io.Writer) *cobra.Command {
 	return cmd
 }
 
-func setUpLogger(out io.Writer, level string) error {
+func setUpLogger(out io.Writer, level, format string) error {
+	logrus.SetOutput(out)
+
 	if level == "" {
 		level = defaultLogLevel.String()
 	}
-	logrus.SetOutput(out)
 	lvl, err := logrus.ParseLevel(level)
 	if err != nil {
 		return errors.Wrap(err, "parsing log level")
 	}
 	logrus.SetLevel(lvl)
+
+	// For the trace level.
+	if lvl > logrus.DebugLevel {
+		logrus.SetReportCaller(true)
+	}
+
+	switch format {
+	case "text":
+		// Relying on the default logrus formatter.
+	case "json":
+		logrus.SetFormatter(&logrus.JSONFormatter{})
+	default:
+		return errors.Errorf("%s is an unknonw logging format", format)
+	}
+
 	return nil
 }
