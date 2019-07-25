@@ -301,15 +301,28 @@ func (b *Broker) validate(msg *message.Message) error {
 
 // invalidMessage puts a message into the Invalid Message Queue.
 func (b *Broker) invalidMessage(m *sqs.Message, specErr error) {
-	if err := b.publishMessage(b.snsTopicInvalidARN, *m.Body); err != nil {
+	arn := b.snsTopicInvalidARN
+	if arn == "" {
+		b.logger.WithField("error-queue", "invalid[disabled]").Warn(specErr)
+		return
+	}
+
+	if err := b.publishMessage(arn, *m.Body); err != nil {
 		b.logger.Error("A message could not be sent to the Invalid Message Queue: ", err)
 	}
-	b.logger.Debug("Message sent to the invalid message queue")
+	b.logger.Debug("Message sent to the Invalid Message Queue")
 }
 
 // errorMessage puts a message into the Error Message Queue.
 func (b *Broker) errorMessage(msg *message.Message, specErr error, receiptHandle *string) {
 	defer b.deleteMessage(receiptHandle)
+
+	arn := b.snsTopicErrorARN
+	if arn == "" {
+		b.logger.WithField("error-queue", "error[disabled]").Warn(specErr)
+		return
+	}
+
 	msg.TagError(specErr)
 	logger := b.logger.WithFields(logrus.Fields{"id": msg.ID(), "specErr": specErr})
 	data, err := json.Marshal(msg)
@@ -317,10 +330,10 @@ func (b *Broker) errorMessage(msg *message.Message, specErr error, receiptHandle
 		logger.Error("A message could not be marshalled before sending to the Error Message Queue: ", err)
 		return
 	}
-	if err = b.publishMessage(b.snsTopicErrorARN, string(data)); err != nil {
+	if err = b.publishMessage(arn, string(data)); err != nil {
 		logger.Error("A message could not be sent to the Error Message Queue: ", err)
 	}
-	b.logger.Debug("Message sent to the error message queue")
+	b.logger.Debug("Message sent to the Error Message Queue")
 }
 
 // Request sends a fire-and-forget request to RDSS.
