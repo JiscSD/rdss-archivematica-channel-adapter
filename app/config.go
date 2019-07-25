@@ -66,7 +66,10 @@ queue_recv_main_addr = ""
 #
 # AWS SNS topic ARN, e.g. "arn:aws:sqs:us-east-2:444455556666:queue1".
 #
-# The adapter will publish to this queue.
+# The adapter will publish to these queues.
+#
+# It is possible to use empty strings in the error and invalid addresses.
+# When that's the case, the adapter will send events to the logger instead.
 #
 queue_send_main_addr = ""
 queue_send_error_addr = ""
