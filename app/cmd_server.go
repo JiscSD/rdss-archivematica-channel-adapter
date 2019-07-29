@@ -11,6 +11,7 @@ import (
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/adapter"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker"
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3"
+	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/version"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -28,6 +29,7 @@ func NewCmdServer(logger logrus.FieldLogger, config *Config) *cobra.Command {
 		Use:   "server",
 		Short: "Start the application server",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger.WithField("v", version.VERSION).Info("Starting server...")
 			return doServer(logger, config)
 		},
 	}
