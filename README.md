@@ -2,16 +2,16 @@
 
 # RDSS Archivematica Channel Adapter
 
-- [Introduction](#Introduction)
-- [Installation](#Installation)
-- [Configuration](#Configuration)
-  - [Configuration file](#Configuration-file)
-  - [Environment variables](#Environment-variables)
-  - [Service dependencies](#Service-dependencies)
-  - [AWS service client configuration](#AWS-service-client-configuration)
-  - [Registry of Archivematica pipelines](#Registry-of-Archivematica-pipelines)
-- [Metrics and runtime profiling data](#Metrics-and-runtime-profiling-data)
-- [Contributing](#Contributing)
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Configuration](#configuration)
+  - [Configuration file](#configuration-file)
+  - [Environment variables](#environment-variables)
+  - [Service dependencies](#service-dependencies)
+  - [AWS service client configuration](#aws-service-client-configuration)
+  - [Registry of Archivematica pipelines](#registry-of-archivematica-pipelines)
+- [Metrics and runtime profiling data](#metrics-and-runtime-profiling-data)
+- [Contributing](#contributing)
 
 ## Introduction
 
@@ -21,28 +21,49 @@ RDSS Archivematica Channel Adapter is an implementation of a channel adapter for
 
 This application is distributed as a single static binary file that you can download from the [Releases](https://github.com/JiscRDSS/rdss-archivematica-channel-adapter/releases) page. You can use a process manager such [systemd](https://www.linode.com/docs/quick-answers/linux/start-service-at-boot/) to run it.
 
-The following example runs the application using the Docker image.
+The following example runs the application server using the Docker image.
 
     $ docker run \
         --tty --rm \
-        --env "RDSS_ARCHIVEMATICA_ADAPTER_LOGGING.LEVEL=WARNING" \
-        artefactual/rdss-archivematica-channel-adapter \
+        --env "RDSS_ARCHIVEMATICA_ADAPTER_ADAPTER.QUEUE_RECV_MAIN_ADDR=https://queue.amazonaws.com/444455556666/recv" \
+        --env "RDSS_ARCHIVEMATICA_ADAPTER_ADAPTER.QUEUE_SEND_MAIN_ADDR=arn:aws:sqs:us-east-2:444455556666:send" \
+        --env "AWS_REGION=us-east-1" \
+        --env "AWS_ACCESS_KEY=1234" \
+        --env "AWS_SECRET_KEY=5678" \
+        artefactual/rdss-archivematica-channel-adapter:latest \
             server
 
-The example above uses the `server` subcommand and passes configuration attributes via the environment.
+Read the [configuration][#Configuration] section before you proceed with the deployment.
 
 ## Configuration
 
-Configuration defaults are included in the source code ([config.go](./app/config.go)). Use it as a reference since it lists all the attributes available including descriptions. We use the [TOML configuration file format](https://en.wikipedia.org/wiki/TOML).
+All configuration attributes are described in the source code. See [config.go](./app/config.go) for more.
 
-Inject custom configuration attributes via a configuration file and/or environment variables.
+There are sensible defaults in place. You need to pay spetial attention to the attributes below and tweak them according to your environment:
+
+- `adapter.processing_table`
+- `adapter.repository_table`
+- `adapter.registry_table`
+- `adapter.queue_recv_main_addr`
+- `adapter.queue_send_main_addr`
 
 ### Configuration file
 
-The configuration file can be indicated via the `--config` command-line argument. When undefined, the application attempts to read from one of the following locations:
+We use the [TOML configuration file format](https://en.wikipedia.org/wiki/TOML). The configuration file can be indicated via the `--config` command-line argument. When undefined, the application attempts to read from one of the following locations:
 
 - `$HOME/.config/rdss-archivematica-channel-adapter.toml`
 - `/etc/archivematica/rdss-archivematica-channel-adapter.toml`
+
+This is a minimal configuration example:
+
+```toml
+[adapter]
+processing_table = "adapter_processing"
+repository_table = "repository_processing"
+registry_table = "registry_processing"
+queue_recv_main_addr = "https://queue.amazonaws.com/444455556666/recv"
+queue_send_main_addr = "arn:aws:sqs:us-east-2:444455556666:send"
+```
 
 ### Environment variables
 
