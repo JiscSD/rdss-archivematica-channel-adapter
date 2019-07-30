@@ -33,13 +33,13 @@ The following example runs the application server using the Docker image.
         artefactual/rdss-archivematica-channel-adapter:latest \
             server
 
-Read the [configuration][#Configuration] section before you proceed with the deployment.
+Read the [configuration](#Configuration) section before you proceed with the deployment.
 
 ## Configuration
 
 All configuration attributes are described in the source code. See [config.go](./app/config.go) for more.
 
-There are sensible defaults in place. You need to pay spetial attention to the attributes below and tweak them according to your environment:
+There are sensible defaults in place. You need to pay special attention to the attributes below and tweak them according to your environment:
 
 - `adapter.processing_table`
 - `adapter.repository_table`
