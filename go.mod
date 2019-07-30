@@ -3,7 +3,7 @@ module github.com/JiscRDSS/rdss-archivematica-channel-adapter
 go 1.12
 
 require (
-	github.com/aws/aws-sdk-go v1.21.4
+	github.com/aws/aws-sdk-go v1.21.7
 	github.com/cenkalti/backoff/v3 v3.0.0
 	github.com/go-logfmt/logfmt v0.4.0
 	github.com/golang/protobuf v1.3.2 // indirect
@@ -31,7 +31,7 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415
 	github.com/xeipuuv/gojsonschema v0.0.0-20180207214316-8bcffc811467
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
-	golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7 // indirect
+	golang.org/x/sys v0.0.0-20190730183949-1393eb018365 // indirect
 	golang.org/x/text v0.3.2 // indirect
-	golang.org/x/tools v0.0.0-20190724185037-8aa4eac1a7c1
+	golang.org/x/tools v0.0.0-20190729092621-ff9f1409240a
 )
