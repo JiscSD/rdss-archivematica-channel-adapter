@@ -9,7 +9,7 @@ uuid=$(uuidgen)
 tmpfile=$(mktemp /tmp/test-send-message.XXXXXX)
 title="test-$(date +"%Y%m%d%H%M%S")"
 
-cat ${sample} | jq '.messageBody.objectTitle = "'${title}'" | .objectTitle.messageHeader.messageId = "'${uuid}'"' > ${tmpfile}
+cat ${sample} | jq '.messageBody.objectTitle = "'${title}'" | .messageHeader.messageId = "'${uuid}'"' > ${tmpfile}
 
 env \
 	AWS_SECRET_ACCESS_KEY=1234 \
