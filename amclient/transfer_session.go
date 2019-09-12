@@ -389,7 +389,6 @@ func (c *ChecksumSet) Write() error {
 	defer writer.Flush()
 
 	for name, sum := range c.values {
-		name = "objects/" + name // See https://github.com/artefactual/archivematica/pull/1333.
 		if err := writer.Write([]string{sum, name}); err != nil {
 			return err
 		}
