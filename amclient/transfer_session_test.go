@@ -212,11 +212,11 @@ func TestTransferSession_ChecksumSet(t *testing.T) {
 	set.Add("woodpigeon-pic.jpg", "53a64110e067b14394c142c09571bea0")
 
 	var (
-		want1 = `92c8ab01cecceb3bf0789c2cd8c7415a objects/bird-sounds.mp3
-53a64110e067b14394c142c09571bea0 objects/woodpigeon-pic.jpg
+		want1 = `92c8ab01cecceb3bf0789c2cd8c7415a bird-sounds.mp3
+53a64110e067b14394c142c09571bea0 woodpigeon-pic.jpg
 `
-		want2 = `53a64110e067b14394c142c09571bea0 objects/woodpigeon-pic.jpg
-92c8ab01cecceb3bf0789c2cd8c7415a objects/bird-sounds.mp3
+		want2 = `53a64110e067b14394c142c09571bea0 woodpigeon-pic.jpg
+92c8ab01cecceb3bf0789c2cd8c7415a bird-sounds.mp3
 `
 	)
 
