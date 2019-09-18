@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/twinj/uuid"
+	"github.com/google/uuid"
 	"github.com/xeipuuv/gojsonschema"
 
 	bErrors "github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/errors"
