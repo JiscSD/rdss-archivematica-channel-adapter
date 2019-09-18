@@ -3,7 +3,7 @@ package message
 import (
 	"encoding/json"
 
-	"github.com/twinj/uuid"
+	"github.com/google/uuid"
 )
 
 type UUID struct {
@@ -11,7 +11,7 @@ type UUID struct {
 }
 
 func NewUUID() *UUID {
-	return &UUID{sub: uuid.NewV4()}
+	return &UUID{sub: uuid.New()}
 }
 
 func ParseUUID(str string) (*UUID, error) {
@@ -19,7 +19,7 @@ func ParseUUID(str string) (*UUID, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &UUID{sub: *ret}, nil
+	return &UUID{sub: ret}, nil
 }
 
 func MustUUID(str string) *UUID {
@@ -48,6 +48,6 @@ func (u *UUID) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	u.sub = *id
+	u.sub = id
 	return nil
 }

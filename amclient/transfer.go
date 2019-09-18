@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/twinj/uuid"
+	"github.com/google/uuid"
 )
 
 const transferBasePath = "api/transfer"

@@ -13,10 +13,10 @@ import (
 	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3"
 
 	"github.com/cenkalti/backoff/v3"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	"github.com/twinj/uuid"
 )
 
 var (
@@ -64,7 +64,7 @@ func (c *Adapter) handleMetadataCreateRequest(msg *message.Message) error {
 			PackageType:          &packageTypeAIP,
 			PackageContainerType: &packageContainerType,
 			PackagePreservationEvent: message.PreservationEvent{
-				PreservationEventValue: uuid.NewV4().String(),
+				PreservationEventValue: uuid.New().String(),
 				PreservationEventType:  &preservationEventType,
 			},
 		},
