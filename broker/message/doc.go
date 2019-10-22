@@ -12,12 +12,7 @@ git tag desired, e.g. "v4.0.0".
 
 2) Update the Version string in version.go.
 
-3) Build specdata/specdata.go using hack/build-spec.go. The outcome is a bucket
-containing all the files of the spec submodule. This is so they can be embedded
-into the binary, e.g. for schema validation purposes, access to the schema files
-is required.
-
-4) When the API enumeration.json schema changes, update the corresponding
+3) When the API enumeration.json schema changes, update the corresponding
 shared_enumeration_gen.go using go generate. The generation happens in
 generator.go using text/template and go/format. Run:
 

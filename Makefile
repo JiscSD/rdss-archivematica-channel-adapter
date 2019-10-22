@@ -5,7 +5,6 @@ default: testrace fmt lint
 
 tools:
 	# Install tools listed in tools.go.
-	go install github.com/johnewart/io-bindata
 	go install golang.org/x/tools/cmd/cover
 
 	# Install golangci-lint.
@@ -40,9 +39,6 @@ lint:
 
 cover:
 	@hack/coverage.sh
-
-spec:
-	hack/build-spec.sh
 
 bench:
 	@for pkg in $(shell go list ./...); do \

@@ -2,14 +2,13 @@ package integration
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
-	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message/specdata"
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/integration/ammock"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/internal/testutil"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -134,13 +133,9 @@ func purgeDynamoDBTable(t *testing.T, table string, keyName string) {
 
 func newMetadataCreateMessage(t *testing.T, tenantJiscID uint64, objectTitle string, storagePlatform message.StorageTypeEnum, fileName, fileLocation, fileMD5 string, fileSize int) string {
 	t.Helper()
-	blob, err := specdata.Asset("messages/example_message.json")
-	if err != nil {
-		t.Fatal("Cannot read example_message.json fixture:", err)
-	}
+	blob := testutil.SpecFixture(t, "messages/example_message.json")
 	m := message.New(message.MessageTypeEnum_MetadataCreate, message.MessageClassEnum_Command)
-	err = json.Unmarshal(blob, m)
-	if err != nil {
+	if err := json.Unmarshal(blob, m); err != nil {
 		t.Fatal("Cannot unmarshall example_message.json fixture:", err)
 	}
 	msg, err := m.MetadataCreateRequest()
@@ -165,12 +160,4 @@ func newMetadataCreateMessage(t *testing.T, tenantJiscID uint64, objectTitle str
 		t.Fatal("Cannot marshal created message:", err)
 	}
 	return string(res)
-}
-
-func readFixture(t *testing.T, path string) []byte {
-	blob, err := ioutil.ReadFile(path)
-	if err != nil {
-		t.Fatalf("readFixture failed: %v", err)
-	}
-	return blob
 }

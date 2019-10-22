@@ -13,7 +13,7 @@ branches:
 git:
   depth: 3
   quiet: true
-  submodules: false
+  submodules: true
 
 notifications:
   email: false
