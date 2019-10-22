@@ -189,12 +189,6 @@ func (b *Broker) openMessage(m *sqs.Message) (*message.Message, error) {
 		return nil, err
 	}
 
-	// Payload validation.
-	if err := b.validate(msg); err != nil {
-		b.invalidMessage(m, bErrors.NewWithError(bErrors.GENERR001, err))
-		return nil, err
-	}
-
 	seen, err := b.seenBeforeOrStore(msg)
 
 	// Not having access to the local data repository should not be a reason
@@ -268,29 +262,6 @@ func (b *Broker) publishMessage(topicARN string, payload string) error {
 		TopicArn: aws.String(topicARN),
 	})
 	return err
-}
-
-// validate returns whether the message is valid according to the spec.
-func (b *Broker) validate(msg *message.Message) error {
-	res, err := b.validator.Validate(msg)
-	if err != nil {
-		return errors.Wrap(err, "validation failed")
-	}
-	if res.Valid() {
-		return nil
-	}
-	message.ValidateVersion(msg.MessageHeader.Version, res)
-
-	var (
-		logger  = b.logger.WithField("messageID", msg.ID())
-		valErrs = res.Errors()
-		count   = len(valErrs)
-	)
-	logger.Debugf("JSON Schema validator found %d issues.", count)
-	for _, re := range valErrs {
-		logger.Debugf("- %s", re.Description())
-	}
-	return fmt.Errorf("message has unexpected format, %d errors found", count)
 }
 
 // invalidMessage puts a message into the Invalid Message Queue.

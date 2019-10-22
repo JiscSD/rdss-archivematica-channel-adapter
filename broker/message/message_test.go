@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/xeipuuv/gojsonschema"
 
 	bErrors "github.com/JiscSD/rdss-archivematica-channel-adapter/broker/errors"
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message/specdata"
@@ -292,7 +291,6 @@ var sharedTests = []struct {
 }
 
 func TestMessage_DecodeFixtures(t *testing.T) {
-	var validator = getValidator(t)
 	for _, tt := range sharedTests {
 		t.Run(tt.name, func(t *testing.T) {
 			blob := specdata.MustAsset(tt.pathFixture)
@@ -308,16 +306,6 @@ func TestMessage_DecodeFixtures(t *testing.T) {
 			msg.MessageHeader.CorrelationID = correlationID
 			msg.MessageBody = typedBody(tt.t, correlationID)
 			msg.body = blob
-			res, err := validator.Validate(msg)
-			if err != nil {
-				t.Fatal("validator failed:", err)
-			}
-			if !res.Valid() {
-				for _, err := range res.Errors() {
-					t.Log("validation error:", err)
-				}
-				t.Error("validator reported that the message is not valid")
-			}
 
 			// Test that decoding works.
 			if err := dec.Decode(msg.MessageBody); err != nil {
@@ -359,12 +347,10 @@ func TestMessage_OtherFixtures(t *testing.T) {
 			if err := json.Unmarshal(blob, &tc.value); err != nil {
 				t.Fatal(err)
 			}
-			msg, ok := tc.value.(*Message)
+			_, ok := tc.value.(*Message)
 			if !ok {
 				t.Fatalf("value has not the expected type")
 			}
-			res, err := getValidator(t).Validate(msg)
-			assertResults(t, res, err)
 		})
 	}
 }
@@ -416,28 +402,6 @@ func TestMessage_OtherFixtures_Header(t *testing.T) {
 			if err := json.Unmarshal(blob, msg); err != nil {
 				t.Fatal(err)
 			}
-			res, err := getValidator(t).Validate(msg)
-			assertResults(t, res, err)
 		})
-	}
-}
-
-func getValidator(t *testing.T) Validator {
-	validator, err := NewValidator()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return validator
-}
-
-func assertResults(t *testing.T, res *gojsonschema.Result, err error) {
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Valid() {
-		for _, err := range res.Errors() {
-			t.Log("validation error:", err)
-		}
-		t.Error("validator reported that the message is not valid")
 	}
 }
