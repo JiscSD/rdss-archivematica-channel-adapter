@@ -20,9 +20,7 @@ type Message struct {
 	// MessageBody carries the message payload.
 	MessageBody interface{}
 
-	// Raw payload streams using during validation (gojsonschema), e.g.:
-	//	loader := gojsonschema.NewBytesLoader(msg.body)
-	//	validator.Validate(loader)
+	// Raw payload streams can be useful during validation.
 	header []byte
 	body   []byte
 }

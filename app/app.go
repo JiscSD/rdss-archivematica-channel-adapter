@@ -47,7 +47,6 @@ func RootCommand(out, stderr io.Writer) *cobra.Command {
 	}
 
 	cmd.AddCommand(NewCmdConfig(out, config))
-	cmd.AddCommand(NewCmdValidate(out))
 	cmd.AddCommand(NewCmdVersion(out))
 	cmd.AddCommand(NewCmdServer(logrus.WithField("cmd", "server"), config))
 
