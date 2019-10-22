@@ -192,13 +192,19 @@ func (b *Broker) openMessage(m *sqs.Message) (*message.Message, error) {
 	if err != nil {
 		b.logger.Warning("Validation service reported a problem: ", err)
 	} else {
-		stream = result
+		stream = result // Use the validator stream only if error-free.
 	}
 
 	// Payload unmarshal.
 	msg := &message.Message{}
 	err = json.Unmarshal(stream, msg)
 	if err != nil {
+		b.invalidMessage(m, bErrors.NewWithError(bErrors.GENERR001, err))
+		return nil, err
+	}
+
+	if msg.MessageHeader.Version != message.Version {
+		err := fmt.Errorf("version %s is not supported, only %s", msg.MessageHeader.Version, message.Version)
 		b.invalidMessage(m, bErrors.NewWithError(bErrors.GENERR001, err))
 		return nil, err
 	}
