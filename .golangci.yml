@@ -8,6 +8,11 @@ run:
 linters:
   enable:
   - misspell
+  - gofmt
+
+linters-settings:
+  gofmt:
+    simplify: false
 
 issues:
   exclude-rules:
