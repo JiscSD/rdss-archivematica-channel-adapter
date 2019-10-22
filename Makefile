@@ -8,7 +8,7 @@ tools:
 	go install golang.org/x/tools/cmd/cover
 
 	# Install golangci-lint.
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.17.1
+	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.21.0
 
 build:
 	@echo ${VERSION}
