@@ -115,7 +115,7 @@ func (s *TransferSession) path() string {
 
 // Create returns a new file created in the transfer directory.
 func (s *TransferSession) Create(name string) (afero.File, error) {
-	err := s.fs.MkdirAll(filepath.Dir(name), os.FileMode(0755))
+	err := s.fs.MkdirAll(filepath.Dir(name), os.FileMode(0o755))
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (s *TransferSession) ChecksumSHA256(name, sum string) {
 func (s *TransferSession) createMetadataDir() error {
 	const path = "/metadata"
 	if _, err := s.fs.Stat(path); err != nil {
-		return s.fs.Mkdir(path, os.FileMode(0755))
+		return s.fs.Mkdir(path, os.FileMode(0o755))
 	}
 	return nil
 }

@@ -27,10 +27,9 @@ cache:
 jobs:
   include:
     - os: linux
-      go: "1.12.x"
+      go: "1.13.x"
       env:
         - TEST_TYPE=unit
-        - GO111MODULE=on
       script:
         - go mod download
         - make tools
@@ -39,10 +38,9 @@ jobs:
         - make lint
         - hack/coverage.sh --coveralls
     - os: linux
-      go: "1.12.x"
+      go: "1.13.x"
       env:
         - TEST_TYPE=integration
-        - GO111MODULE=on
       services:
         - docker
       script:
