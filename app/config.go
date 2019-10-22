@@ -64,6 +64,12 @@ queue_send_main_addr = ""
 queue_send_error_addr = ""
 queue_send_invalid_addr = ""
 
+#
+# Schema service address (provided by Jisc) for validation and transformation.
+# The adapter skips the validation/transformation stage when empty.
+#
+validation_service_addr = ""
+
 ################################## AWS ########################################
 
 [aws]
@@ -90,13 +96,14 @@ type Config struct {
 	} `mapstructure:"logging"`
 
 	Adapter struct {
-		RepositoryTable      string `mapstructure:"repository_table"`
-		ProcessingTable      string `mapstructure:"processing_table"`
-		RegistryTable        string `mapstructure:"registry_table"`
-		QueueRecvMainAddr    string `mapstructure:"queue_recv_main_addr"`
-		QueueSendMainAddr    string `mapstructure:"queue_send_main_addr"`
-		QueueSendErrorAddr   string `mapstructure:"queue_send_error_addr"`
-		QueueSendInvalidAddr string `mapstructure:"queue_send_invalid_addr"`
+		RepositoryTable       string `mapstructure:"repository_table"`
+		ProcessingTable       string `mapstructure:"processing_table"`
+		RegistryTable         string `mapstructure:"registry_table"`
+		QueueRecvMainAddr     string `mapstructure:"queue_recv_main_addr"`
+		QueueSendMainAddr     string `mapstructure:"queue_send_main_addr"`
+		QueueSendErrorAddr    string `mapstructure:"queue_send_error_addr"`
+		QueueSendInvalidAddr  string `mapstructure:"queue_send_invalid_addr"`
+		ValidationServiceAddr string `mapstructure:"validation_service_addr"`
 	} `mapstructure:"adapter"`
 
 	AWS struct {

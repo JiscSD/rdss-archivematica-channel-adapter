@@ -10,6 +10,7 @@ import (
 
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/adapter"
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/s3"
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/version"
 
@@ -136,15 +137,14 @@ func server(logger logrus.FieldLogger, config *Config) (*adapter.Adapter, *adapt
 		}
 		snsClient := sns.New(sess)
 
-		brClient, err = broker.New(
-			logger,
+		var valsvc message.Validator = &message.NoOpValidatorImpl{}
+
+		brClient = broker.New(
+			logger, valsvc,
 			sqsClient, config.Adapter.QueueRecvMainAddr,
 			snsClient, config.Adapter.QueueSendMainAddr, config.Adapter.QueueSendInvalidAddr, config.Adapter.QueueSendErrorAddr,
 			dynamodbClient, config.Adapter.RepositoryTable,
 			incomingMessages)
-		if err != nil {
-			return nil, nil, err
-		}
 	}
 
 	var s3Client s3.ObjectStorage

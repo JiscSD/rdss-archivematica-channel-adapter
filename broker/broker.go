@@ -3,6 +3,7 @@ package broker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"runtime/debug"
 	"sync"
@@ -17,7 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/sns/snsiface"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/aws/aws-sdk-go/service/sqs/sqsiface"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
@@ -68,13 +68,13 @@ const (
 //
 type Broker struct {
 	logger             logrus.FieldLogger
+	validator          message.Validator
 	sqsClient          sqsiface.SQSAPI
 	sqsQueueMainURL    string
 	snsClient          snsiface.SNSAPI
 	snsTopicMainARN    string
 	snsTopicInvalidARN string
 	snsTopicErrorARN   string
-	validator          message.Validator
 	ctx                context.Context
 	cancel             context.CancelFunc
 	messages           chan *sqs.Message
@@ -88,13 +88,14 @@ type Broker struct {
 
 // New returns a usable Broker.
 func New(
-	logger logrus.FieldLogger,
+	logger logrus.FieldLogger, validator message.Validator,
 	sqsClient sqsiface.SQSAPI, sqsQueueMainURL string,
 	snsClient snsiface.SNSAPI, snsTopicMainARN, snsTopicInvalidARN, snsTopicErrorARN string,
 	dynamodbClient dynamodbiface.DynamoDBAPI, dynamodbTable string,
-	incomingMessages prometheus.Counter) (*Broker, error) {
+	incomingMessages prometheus.Counter) *Broker {
 	b := &Broker{
 		logger:             logger,
+		validator:          validator,
 		sqsClient:          sqsClient,
 		sqsQueueMainURL:    sqsQueueMainURL,
 		snsTopicMainARN:    snsTopicMainARN,
@@ -111,15 +112,9 @@ func New(
 	b.Metadata = &MetadataServiceOp{broker: b}
 	b.Preservation = &PreservationServiceOp{broker: b}
 
-	var err error
-	b.validator, err = message.NewValidator()
-	if err != nil {
-		return nil, errors.Wrap(err, "validator setup failed")
-	}
-
 	go b.processor()
 
-	return b, nil
+	return b
 }
 
 // Run starts the processing.
@@ -181,9 +176,28 @@ func (b *Broker) loop() {
 func (b *Broker) openMessage(m *sqs.Message) (*message.Message, error) {
 	b.incomingMessages.Inc()
 
+	var stream = []byte(*m.Body)
+
+	// Pass the message through the validation/transformation service.
+	result, err := b.validator.Validate(b.ctx, stream)
+
+	// We give up when the validator reports validation issues, but we'll
+	// continue in case of other errors, e.g. service is down.
+	var validErr = &message.ValidationError{}
+	if errors.As(err, validErr) {
+		b.invalidMessage(m, bErrors.NewWithError(bErrors.GENERR001, err))
+		b.logger.Warning("Validation service reported schema issues: ", validErr)
+		return nil, err
+	}
+	if err != nil {
+		b.logger.Warning("Validation service reported a problem: ", err)
+	} else {
+		stream = result
+	}
+
 	// Payload unmarshal.
 	msg := &message.Message{}
-	err := json.Unmarshal([]byte(*m.Body), msg)
+	err = json.Unmarshal(stream, msg)
 	if err != nil {
 		b.invalidMessage(m, bErrors.NewWithError(bErrors.GENERR001, err))
 		return nil, err
