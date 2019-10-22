@@ -423,7 +423,7 @@ func TestMessage_OtherFixtures_Header(t *testing.T) {
 }
 
 func getValidator(t *testing.T) Validator {
-	validator, err := NewValidator("string")
+	validator, err := NewValidator()
 	if err != nil {
 		t.Fatal(err)
 	}

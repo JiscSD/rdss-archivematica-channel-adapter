@@ -92,7 +92,6 @@ func New(
 	sqsClient sqsiface.SQSAPI, sqsQueueMainURL string,
 	snsClient snsiface.SNSAPI, snsTopicMainARN, snsTopicInvalidARN, snsTopicErrorARN string,
 	dynamodbClient dynamodbiface.DynamoDBAPI, dynamodbTable string,
-	validationMode string,
 	incomingMessages prometheus.Counter) (*Broker, error) {
 	b := &Broker{
 		logger:             logger,
@@ -113,7 +112,7 @@ func New(
 	b.Preservation = &PreservationServiceOp{broker: b}
 
 	var err error
-	b.validator, err = message.NewValidator(validationMode)
+	b.validator, err = message.NewValidator()
 	if err != nil {
 		return nil, errors.Wrap(err, "validator setup failed")
 	}
@@ -272,8 +271,6 @@ func (b *Broker) publishMessage(topicARN string, payload string) error {
 }
 
 // validate returns whether the message is valid according to the spec.
-// The error returned is nil when the validator use is NoOpValidator.
-// The logging events sent in this method are documented, don't change them!
 func (b *Broker) validate(msg *message.Message) error {
 	res, err := b.validator.Validate(msg)
 	if err != nil {
@@ -292,9 +289,6 @@ func (b *Broker) validate(msg *message.Message) error {
 	logger.Debugf("JSON Schema validator found %d issues.", count)
 	for _, re := range valErrs {
 		logger.Debugf("- %s", re.Description())
-	}
-	if _, ok := b.validator.(*message.NoOpValidator); ok {
-		return nil
 	}
 	return fmt.Errorf("message has unexpected format, %d errors found", count)
 }

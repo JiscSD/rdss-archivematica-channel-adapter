@@ -9,21 +9,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 	"github.com/xeipuuv/gojsonreference"
 	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message/specdata"
-)
-
-// ValidationMode determines the type of message validation performed.
-type ValidationMode int
-
-const (
-	_                                     = iota
-	ValidationModeStrict   ValidationMode = iota // Messages are rejected if invalid, validation issues will be logged.
-	ValidationModeWarnings                       // Messages will not be rejected but the validation issues will be logged.
-	ValidationModeDisabled                       // Message validator is disabled.
 )
 
 func init() {
@@ -44,7 +33,6 @@ type Validator interface {
 // rdssValidator implements Validator. It is the default validation solution for
 // the RDSS API and it depends on its schema files.
 type rdssValidator struct {
-	Mode       ValidationMode
 	validators map[string]*gojsonschema.Schema
 }
 
@@ -100,24 +88,8 @@ func resolveSchemaRef(source string) string {
 }
 
 // NewValidator returns a Validator with all the RDSS API schemas loaded.
-func NewValidator(mode string) (Validator, error) {
-	var m ValidationMode
-	switch mode {
-	case "strict":
-		m = ValidationModeStrict
-	case "warnings":
-		m = ValidationModeWarnings
-	case "disabled":
-		m = ValidationModeDisabled
-	default:
-		enabled, err := cast.ToBoolE(mode)
-		if err == nil && !enabled {
-			return &NoOpValidator{}, nil
-		}
-	}
-
+func NewValidator() (Validator, error) {
 	v := &rdssValidator{
-		Mode:       m,
 		validators: make(map[string]*gojsonschema.Schema),
 	}
 
@@ -238,21 +210,6 @@ func decodeJson(r io.Reader) (interface{}, error) {
 		return nil, err
 	}
 	return document, nil
-}
-
-// NoOpValidator is a validator that recognizes all messages as valid.
-type NoOpValidator struct{}
-
-var _ Validator = NoOpValidator{}
-
-// Validate implements Validator.
-func (v NoOpValidator) Validate(msg *Message) (*gojsonschema.Result, error) {
-	return &gojsonschema.Result{}, nil
-}
-
-// Validators implements Validator.
-func (v NoOpValidator) Validators() map[string]*gojsonschema.Schema {
-	return map[string]*gojsonschema.Schema{}
 }
 
 // EmailFormatChecker is a custom emailFormatChecker. The one provided by the

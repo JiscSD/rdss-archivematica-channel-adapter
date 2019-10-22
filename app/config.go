@@ -46,23 +46,6 @@ repository_table = "rdss_archivematica_adapter_local_data_repository"
 registry_table = "rdss_archivematica_adapter_registry"
 
 #
-# Message validation supports three modes:
-#
-#   validation="strict"
-#   Invalid messages are rejected.
-#   The validation errors are logged in DEBUG mode.
-#
-#   validation="warnings"
-#   Invalid messages are processed.
-#   The validation errors are logged in DEBUG mode.
-#
-#   validation="disabled"
-#   Message validation will not be performed.
-#
-#
-validation_mode = "strict"
-
-#
 # AWS SQS queue URL, e.g. "https://queue.amazonaws.com/80398EXAMPLE/MyQueue".
 #
 # The adapter will subscribe to this queue.
@@ -110,7 +93,6 @@ type Config struct {
 		RepositoryTable      string `mapstructure:"repository_table"`
 		ProcessingTable      string `mapstructure:"processing_table"`
 		RegistryTable        string `mapstructure:"registry_table"`
-		ValidationMode       string `mapstructure:"validation"`
 		QueueRecvMainAddr    string `mapstructure:"queue_recv_main_addr"`
 		QueueSendMainAddr    string `mapstructure:"queue_send_main_addr"`
 		QueueSendErrorAddr   string `mapstructure:"queue_send_error_addr"`
