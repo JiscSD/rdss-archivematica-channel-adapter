@@ -46,6 +46,7 @@ There are sensible defaults in place. You need to pay special attention to the a
 - `adapter.registry_table`
 - `adapter.queue_recv_main_addr`
 - `adapter.queue_send_main_addr`
+- `adapter.validation_service_addr`
 
 ### Configuration file
 
@@ -67,10 +68,12 @@ queue_send_main_addr = "arn:aws:sqs:us-east-2:444455556666:send"
 
 ### Environment variables
 
-Configuration from environment variables have precedence over file-based configuration. All environment variables follow the same naming scheme: `RDSS_ARCHIVEMATICA_ADAPTER_<SECTION>_<ATTRIBUTE>=<VALUE>`. The following is a valid example:
+Configuration from environment variables have precedence over file-based configuration. All environment variables follow the same naming scheme: `RDSS_ARCHIVEMATICA_ADAPTER_<SECTION>_<ATTRIBUTE>=<VALUE>`. Some valid examples are:
 
 - `RDSS_ARCHIVEMATICA_ADAPTER_LOGGING.LEVEL=DEBUG`<br />
   (section: `LOGGING`, attribute: `LEVEL`, value: `DEBUG`)
+- `RDSS_ARCHIVEMATICA_ADAPTER_ADAPTER.VALIDATION_SERVICE_ADDR=http://service.tld:9000`<br />
+  (sectoin: `ADAPTER`, attribute: `VALIDATION_SERVICE_ADDR`, value: `http://service.tld:9000`)
 
 ### Service dependencies
 

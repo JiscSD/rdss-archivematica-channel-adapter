@@ -74,8 +74,9 @@ func (m *dynaMock) PutItem(input *dynamodb.PutItemInput) (*dynamodb.PutItemOutpu
 
 func ExampleNew() {
 	// Create the broker client.
-	b, _ := broker.New(
+	b := broker.New(
 		logrus.StandardLogger(),
+		&message.NoOpValidatorImpl{},
 		&sqsMock{},
 		"http://localhost:4576/queue/main",
 		&snsMock{},
