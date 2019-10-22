@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/amclient"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/amclient"
 	"github.com/pkg/errors"
 
 	"github.com/aws/aws-sdk-go/aws"

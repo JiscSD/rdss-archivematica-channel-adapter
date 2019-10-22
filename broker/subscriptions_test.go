@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
 
 	"github.com/stretchr/testify/require"
 )

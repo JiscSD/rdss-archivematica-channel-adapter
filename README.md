@@ -1,4 +1,4 @@
-[![Travis CI](https://travis-ci.org/JiscRDSS/rdss-archivematica-channel-adapter.svg?branch=master)](https://travis-ci.org/JiscRDSS/rdss-archivematica-channel-adapter) [![GoDoc](https://godoc.org/github.com/JiscRDSS/rdss-archivematica-channel-adapter?status.svg)](https://godoc.org/github.com/JiscRDSS/rdss-archivematica-channel-adapter) [![Coverage Status](https://coveralls.io/repos/github/JiscRDSS/rdss-archivematica-channel-adapter/badge.svg?branch=master)](https://coveralls.io/github/JiscRDSS/rdss-archivematica-channel-adapter?branch=master) [![Go Report Card](https://goreportcard.com/badge/JiscRDSS/rdss-archivematica-channel-adapter)](https://goreportcard.com/report/JiscRDSS/rdss-archivematica-channel-adapter) [![Sourcegraph](https://sourcegraph.com/github.com/JiscRDSS/rdss-archivematica-channel-adapter/-/badge.svg)](https://sourcegraph.com/github.com/JiscRDSS/rdss-archivematica-channel-adapter?badge)
+[![Travis CI](https://travis-ci.org/JiscSD/rdss-archivematica-channel-adapter.svg?branch=master)](https://travis-ci.org/JiscSD/rdss-archivematica-channel-adapter) [![GoDoc](https://godoc.org/github.com/JiscSD/rdss-archivematica-channel-adapter?status.svg)](https://godoc.org/github.com/JiscSD/rdss-archivematica-channel-adapter) [![Coverage Status](https://coveralls.io/repos/github/JiscSD/rdss-archivematica-channel-adapter/badge.svg?branch=master)](https://coveralls.io/github/JiscSD/rdss-archivematica-channel-adapter?branch=master) [![Go Report Card](https://goreportcard.com/badge/JiscSD/rdss-archivematica-channel-adapter)](https://goreportcard.com/report/JiscSD/rdss-archivematica-channel-adapter) [![Sourcegraph](https://sourcegraph.com/github.com/JiscSD/rdss-archivematica-channel-adapter/-/badge.svg)](https://sourcegraph.com/github.com/JiscSD/rdss-archivematica-channel-adapter?badge)
 
 # RDSS Archivematica Channel Adapter
 
@@ -15,11 +15,11 @@
 
 ## Introduction
 
-RDSS Archivematica Channel Adapter is an implementation of a channel adapter for [Archivematica](https://archivematica.org) following the [RDSS messaging API specification](https://github.com/JiscRDSS/rdss-message-api-specification).
+RDSS Archivematica Channel Adapter is an implementation of a channel adapter for [Archivematica](https://archivematica.org) following the [RDSS messaging API specification](https://github.com/JiscSD/rdss-message-api-specification).
 
 ## Installation
 
-This application is distributed as a single static binary file that you can download from the [Releases](https://github.com/JiscRDSS/rdss-archivematica-channel-adapter/releases) page. You can use a process manager such [systemd](https://www.linode.com/docs/quick-answers/linux/start-service-at-boot/) to run it.
+This application is distributed as a single static binary file that you can download from the [Releases](https://github.com/JiscSD/rdss-archivematica-channel-adapter/releases) page. You can use a process manager such [systemd](https://www.linode.com/docs/quick-answers/linux/start-service-at-boot/) to run it.
 
 The following example runs the application server using the Docker image.
 
@@ -188,5 +188,5 @@ Send the `USR2` signal to log the current instances loaded:
 Also, the [broker][3] package can be used to implement your own RDSS adapter using the Go programming language. The linked docs include documentation and examples. The API stability is not guaranteed.
 
 [1]: /CONTRIBUTING.md
-[2]: https://github.com/JiscRDSS/rdss-archivematica-channel-adapter/issues
-[3]: https://godoc.org/github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker
+[2]: https://github.com/JiscSD/rdss-archivematica-channel-adapter/issues
+[3]: https://godoc.org/github.com/JiscSD/rdss-archivematica-channel-adapter/broker

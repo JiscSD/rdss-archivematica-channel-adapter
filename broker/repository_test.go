@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
 )
 
 func TestRepositoryMessageStateString(t *testing.T) {

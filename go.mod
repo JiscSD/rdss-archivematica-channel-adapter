@@ -1,4 +1,4 @@
-module github.com/JiscRDSS/rdss-archivematica-channel-adapter
+module github.com/JiscSD/rdss-archivematica-channel-adapter
 
 go 1.12
 

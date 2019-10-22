@@ -3,9 +3,9 @@ package adapter
 import (
 	"context"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/s3"
 
 	"github.com/sirupsen/logrus"
 )

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/version"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/version"
 
 	"github.com/spf13/cobra"
 )

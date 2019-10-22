@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	bErrors "github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/errors"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/version"
+	bErrors "github.com/JiscSD/rdss-archivematica-channel-adapter/broker/errors"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/version"
 )
 
 // Message represents RDSS messages.

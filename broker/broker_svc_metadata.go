@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
 )
 
 // MetadataService generates Metadata-type messages.

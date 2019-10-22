@@ -12,11 +12,11 @@ tools:
 
 build:
 	@echo ${VERSION}
-	@env CGO_ENABLED=0 go build -ldflags "-X github.com/JiscRDSS/rdss-archivematica-channel-adapter/version.VERSION=${VERSION}" -a -o rdss-archivematica-channel-adapter
+	@env CGO_ENABLED=0 go build -ldflags "-X github.com/JiscSD/rdss-archivematica-channel-adapter/version.VERSION=${VERSION}" -a -o rdss-archivematica-channel-adapter
 
 install:
 	@echo ${VERSION}
-	@env CGO_ENABLED=0 go install -ldflags "-X github.com/JiscRDSS/rdss-archivematica-channel-adapter/version.VERSION=${VERSION}"
+	@env CGO_ENABLED=0 go install -ldflags "-X github.com/JiscSD/rdss-archivematica-channel-adapter/version.VERSION=${VERSION}"
 
 test:
 	@go test -short ./...

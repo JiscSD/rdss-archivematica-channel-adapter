@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/amclient"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/amclient"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/s3"
 
 	"github.com/cenkalti/backoff/v3"
 	"github.com/google/uuid"

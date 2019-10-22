@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/adapter"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/adapter"
 
 	"github.com/pkg/errors"
 )

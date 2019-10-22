@@ -24,7 +24,7 @@ We use [`Go modules`][2] for dependency management.
 
 Clone the repository:
 
-    git clone --recurse-submodules https://github.com/JiscRDSS/rdss-archivematica-channel-adapter
+    git clone --recurse-submodules https://github.com/JiscSD/rdss-archivematica-channel-adapter
 
 ### Building
 
