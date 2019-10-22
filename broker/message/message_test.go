@@ -305,7 +305,6 @@ func TestMessage_DecodeFixtures(t *testing.T) {
 			msg := New(tt.t, tt.c)
 			msg.MessageHeader.CorrelationID = correlationID
 			msg.MessageBody = typedBody(tt.t, correlationID)
-			msg.body = blob
 
 			// Test that decoding works.
 			if err := dec.Decode(msg.MessageBody); err != nil {

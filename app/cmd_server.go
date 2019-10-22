@@ -138,6 +138,16 @@ func server(logger logrus.FieldLogger, config *Config) (*adapter.Adapter, *adapt
 		snsClient := sns.New(sess)
 
 		var valsvc message.Validator = &message.NoOpValidatorImpl{}
+		if config.Adapter.ValidationServiceAddr != "" {
+			valsvc, err = message.NewJiscValidator(
+				config.Adapter.ValidationServiceAddr,
+				version.AppVersion(),
+				message.Version,
+			)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
 
 		brClient = broker.New(
 			logger, valsvc,

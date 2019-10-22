@@ -4,8 +4,6 @@ package message
 
 import (
 	"encoding/json"
-	"reflect"
-	"strings"
 	"time"
 
 	bErrors "github.com/JiscSD/rdss-archivematica-channel-adapter/broker/errors"
@@ -19,10 +17,6 @@ type Message struct {
 
 	// MessageBody carries the message payload.
 	MessageBody interface{}
-
-	// Raw payload streams can be useful during validation.
-	header []byte
-	body   []byte
 }
 
 // New returns a pointer to a new message with a new ID.
@@ -62,18 +56,6 @@ func (m *Message) ID() string {
 		return ""
 	}
 	return m.MessageHeader.ID.String()
-}
-
-func (m Message) Type() string {
-	t := reflect.TypeOf(m.MessageBody)
-	var name string
-	if t.Kind() == reflect.Ptr {
-		name = t.Elem().String()
-	} else {
-		name = t.String()
-	}
-	parts := strings.Split(name, ".")
-	return parts[1]
 }
 
 func (m *Message) TagError(err error) {
@@ -116,8 +98,6 @@ func (m *Message) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	m.MessageBody = typedBody(m.MessageHeader.MessageType, m.MessageHeader.CorrelationID)
-	m.header = []byte(msg.MessageHeader)
-	m.body = []byte(msg.MessageBody)
 	return json.Unmarshal(msg.MessageBody, m.MessageBody)
 }
 
