@@ -36,7 +36,7 @@ type Attributes struct {
 	CorrelationID string `json:"correlationId"`
 }
 
-// inspect extracts the main headers (versoin, type, correlation).
+// inspect extracts the main headers (version, type, correlation).
 func (e *Envelope) inspect() error {
 	if err := json.Unmarshal(e.MessageHeader, &e.Attributes); err != nil {
 		return err
