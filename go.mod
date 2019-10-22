@@ -7,7 +7,6 @@ require (
 	github.com/cenkalti/backoff/v3 v3.0.0
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/schema v1.1.0
-	github.com/johnewart/io-bindata v0.2.3
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/oklog/run v1.0.0

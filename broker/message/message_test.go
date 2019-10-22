@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	bErrors "github.com/JiscSD/rdss-archivematica-channel-adapter/broker/errors"
-	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message/specdata"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/internal/testutil"
 )
 
 // Test if we can recreate `message.json` from Go and test if the result is the
@@ -20,7 +20,7 @@ import (
 // we can find in the API repository.
 func TestMessage_ToJSON(t *testing.T) {
 	// Load fixture.
-	fixture := specdata.MustAsset("messages/example_message.json")
+	fixture := testutil.SpecFixture(t, "messages/example_message.json")
 
 	// Our message.
 	message := &Message{
@@ -293,7 +293,7 @@ var sharedTests = []struct {
 func TestMessage_DecodeFixtures(t *testing.T) {
 	for _, tt := range sharedTests {
 		t.Run(tt.name, func(t *testing.T) {
-			blob := specdata.MustAsset(tt.pathFixture)
+			blob := testutil.SpecFixture(t, tt.pathFixture)
 			dec := json.NewDecoder(bytes.NewReader(blob))
 
 			var correlationID *UUID
@@ -342,7 +342,7 @@ func TestMessage_OtherFixtures(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			blob := specdata.MustAsset(tc.pathFixture)
+			blob := testutil.SpecFixture(t, tc.pathFixture)
 			if err := json.Unmarshal(blob, &tc.value); err != nil {
 				t.Fatal(err)
 			}
@@ -391,8 +391,8 @@ func TestMessage_OtherFixtures_Header(t *testing.T) {
 	for _, tt := range testCases {
 		name := filepath.Base(tt.pathFixtureHeader)
 		t.Run(name, func(t *testing.T) {
-			header := specdata.MustAsset(tt.pathFixtureHeader)
-			body := specdata.MustAsset(tt.pathFixtureBody)
+			header := testutil.SpecFixture(t, tt.pathFixtureHeader)
+			body := testutil.SpecFixture(t, tt.pathFixtureBody)
 			blob := []byte(`{
 			"messageHeader": ` + string(header) + `,
 			"messageBody": ` + string(body) + `

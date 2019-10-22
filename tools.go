@@ -4,6 +4,5 @@ package tools
 
 import (
 	// Install with `make tools`
-	_ "github.com/johnewart/io-bindata"
 	_ "golang.org/x/tools/cmd/cover"
 )

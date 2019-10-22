@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
-	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message/specdata"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/internal/testutil"
 )
 
 // This is the one message type that we expect to be publishing from the adapter
@@ -36,7 +36,7 @@ func TestMessagePreservation_Marshal(t *testing.T) {
 }
 
 func TestMessagePreservation_Unmarshal(t *testing.T) {
-	blob := specdata.MustAsset("messages/body/preservation/preservation_event_request.json")
+	blob := testutil.SpecFixture(t, "messages/body/preservation/preservation_event_request.json")
 	packageType := message.PackageTypeEnum_AIP
 	packageContainerType := message.ContainerTypeEnum_zip
 	preservationEventType := message.PreservationEventTypeEnum_informationPackageCreation

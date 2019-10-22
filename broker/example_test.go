@@ -8,7 +8,7 @@ import (
 
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker"
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
-	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message/specdata"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/internal/testutil"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -35,7 +35,7 @@ func (m *sqsMock) ReceiveMessageWithContext(aws.Context, *sqs.ReceiveMessageInpu
 	m.count++
 	switch m.count {
 	case 1:
-		blob := specdata.MustAsset("messages/example_message.json")
+		blob := testutil.MustSpecFixture("../message-api-spec/messages/example_message.json")
 		return &sqs.ReceiveMessageOutput{
 			Messages: []*sqs.Message{
 				&sqs.Message{
