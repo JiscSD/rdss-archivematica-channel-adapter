@@ -3,6 +3,7 @@ package integration
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
@@ -58,28 +59,91 @@ var (
 )
 
 var (
-	flagDebug = flag.Bool("debug", false, "")
+	flagDebug                 = flag.Bool("debug", false, "")
+	flagValidationServiceAddr = flag.String("valsvc", "", "Address of the Schema Service HTTP API")
 )
 
-// TestInvalidMessage confirms that the adapter reacts to invalid messages by
+// TestValidation confirms that the adapter reacts to invalid messages by
 // sending them to the corresponding invalid message queue.
-func TestInvalidMessage(t *testing.T) {
+func TestValidation(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if *flagValidationServiceAddr == "" {
+		t.Skip("skipping: needs -valsvc flag")
+	}
 	defer cleanUp(t)
+
+	var env = serverEnvironment
+	if *flagValidationServiceAddr != "" {
+		env = append(serverEnvironment[:0:0], serverEnvironment...)
+		env = append(env, fmt.Sprintf("RDSS_ARCHIVEMATICA_ADAPTER_ADAPTER.VALIDATION_SERVICE_ADDR=%s", *flagValidationServiceAddr))
+	}
 
 	s := subscriber(t)
 	defer s.cleanUp()
 
-	sendMessage(t, "invalid message")
+	invalidMessage := `{
+  "messageHeader": {
+	"version": "4.0.0",
+	"messageType": "MetadataCreate"
+  },
+  "messageBody": {}
+}`
 
-	cmd := adapter.Server().WithEnv(serverEnvironment)
+	sendMessage(t, invalidMessage)
+
+	cmd := adapter.Server().WithEnv(env)
 	stop := cmd.RunBackground(t)
 	defer stop()
 
-	s.AssertInvalidMessageReceived("invalid message")
+	s.AssertInvalidMessageReceived(invalidMessage)
 	s.AssertInvalidQueueIsEmpty()
+}
+
+// TestConversion confirms that the adapter converts old messages relying on the
+// schema service.
+func TestConversion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if *flagValidationServiceAddr == "" {
+		t.Skip("skipping: needs -valsvc flag")
+	}
+	defer cleanUp(t)
+
+	var env = serverEnvironment
+	if *flagValidationServiceAddr != "" {
+		env = append(serverEnvironment[:0:0], serverEnvironment...)
+		env = append(env, fmt.Sprintf("RDSS_ARCHIVEMATICA_ADAPTER_ADAPTER.VALIDATION_SERVICE_ADDR=%s", *flagValidationServiceAddr))
+	}
+
+	s := subscriber(t)
+	defer s.cleanUp()
+
+	// Create pipeline and store it in the registry.
+	pipeline := ammock.New(t)
+	defer pipeline.Stop()
+	registerPipeline(t, 133, pipeline)
+
+	// message-metadata-create-v302.json has the corresponding attributes
+	// populated, e.g. checksum, size, etc...
+	putKnownObject(t, "dataset.zip")
+
+	cmd := adapter.Server().WithEnv(env)
+	stop := cmd.RunBackground(t)
+	defer stop()
+
+	// Send MetadataCreate v3.0.2 message using tenantJiscID=1.
+	msg, _ := ioutil.ReadFile("./testdata/message-metadata-create-v302.json")
+	sendMessage(t, string(msg))
+
+	// We're expecting a presevation event from Archivematica.
+	// TODO: verify the payload.
+	s.AssertMainMessageReceived("")
+
+	pipeline.AssertAPIUsed()
+	pipeline.AssertTransferDirIsNotEmpty()
 }
 
 // TestLocalDataRepository confirms that the same message delivered twice

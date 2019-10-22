@@ -1,4 +1,5 @@
 VERSION := $(shell git describe --tags --always --dirty)
+SCHEMA_SERVICE_ADDR := "https://messageschema.dev.jiscrepository.com"
 
 default: testrace fmt lint
 
@@ -29,7 +30,7 @@ test-integration: install
 	docker-compose --file ./integration/docker-compose.yml ps
 	integration/scripts/wait.sh
 	integration/scripts/provision.sh
-	go test -v ./integration/...
+	go test -v ./integration/... -valsvc=$(SCHEMA_SERVICE_ADDR)
 
 fmt:
 	@test -z "$(shell gofmt -l -d -e . | tee /dev/stderr)"

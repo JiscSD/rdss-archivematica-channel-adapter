@@ -3,7 +3,9 @@ version: "3"
 services:
 
   localstack:
-    image: "localstack/localstack:latest"
+    # v0.10.0 or newer not working for me,
+    # SQS eventually stops delivering messages.
+    image: "localstack/localstack:0.9.6"
     ports:
       - "4567-4584:4567-4584"
       - "8080:8080"

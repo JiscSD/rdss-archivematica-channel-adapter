@@ -2,6 +2,7 @@ package integration
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"strconv"
 	"strings"
 	"testing"
@@ -164,4 +165,12 @@ func newMetadataCreateMessage(t *testing.T, tenantJiscID uint64, objectTitle str
 		t.Fatal("Cannot marshal created message:", err)
 	}
 	return string(res)
+}
+
+func readFixture(t *testing.T, path string) []byte {
+	blob, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Fatalf("readFixture failed: %v", err)
+	}
+	return blob
 }
