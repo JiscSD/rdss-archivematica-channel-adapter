@@ -84,7 +84,6 @@ func ExampleNew() {
 		"arn:aws:sns:us-east-1:123456789012:error",
 		&dynaMock{},
 		"local_data_repository",
-		"strict",
 		prometheus.NewCounter(prometheus.CounterOpts{}),
 	)
 

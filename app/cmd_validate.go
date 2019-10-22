@@ -42,7 +42,7 @@ func doValidate(out io.Writer) error {
 		return err
 	}
 	fmt.Fprintln(out, "Message found!", msg.ID())
-	validator, err := message.NewValidator("strict")
+	validator, err := message.NewValidator()
 	if err != nil {
 		return err
 	}

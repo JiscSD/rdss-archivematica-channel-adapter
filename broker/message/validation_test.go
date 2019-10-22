@@ -20,7 +20,7 @@ func TestNewValidator(t *testing.T) {
 		]
 	}`)
 	DefaultSchemaDocFinder = func(string) ([]byte, error) { return schema, nil }
-	validator, err := NewValidator("strict")
+	validator, err := NewValidator()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestNewValidator(t *testing.T) {
 
 	// Test missing validator.
 	delete(rdssSchemas, "MetadataDeleteRequest")
-	validator, err = NewValidator("strict")
+	validator, err = NewValidator()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestNewValidator(t *testing.T) {
 func TestNewValidator_WithError(t *testing.T) {
 	var notFoundError = errors.New("schema not found")
 	DefaultSchemaDocFinder = func(string) ([]byte, error) { return nil, notFoundError }
-	validator, err := NewValidator("strict")
+	validator, err := NewValidator()
 	if validator != nil {
 		t.Fatalf("NewValidator() returned a non-nil value, got %v", validator)
 	}
@@ -221,20 +221,10 @@ func Test_decodeJson(t *testing.T) {
 	}
 }
 
-func TestNoOpValidator(t *testing.T) {
-	invalidMessage := New(MessageTypeEnum_MetadataDelete, MessageClassEnum_Command)
-	invalidMessage.body = []byte(`{}`) // Invalid because missing required `objectUUID`.
-	validator := &NoOpValidator{}
-	res, err := validator.Validate(invalidMessage)
-	if !res.Valid() || err != nil {
-		t.Fatalf("NoOpValidator.Validate() returned unexpected values")
-	}
-}
-
 var (
 	benchRes          *gojsonschema.Result
 	benchErr          error
-	benchValidator, _ = NewValidator("strict")
+	benchValidator, _ = NewValidator()
 )
 
 func benchmarkValidation(msg *Message, validator Validator, b *testing.B) {
@@ -250,12 +240,6 @@ func benchmarkValidation(msg *Message, validator Validator, b *testing.B) {
 	// Store the results to package level variables so the compiler cannot
 	// eliminate the Benchmark itself.
 	benchRes, benchErr = res, err
-}
-
-func BenchmarkValidationNoOp(b *testing.B) {
-	msg := New(MessageTypeEnum_MetadataDelete, MessageClassEnum_Command)
-	msg.body = []byte(`{}`)
-	benchmarkValidation(msg, &NoOpValidator{}, b)
 }
 
 func BenchmarkValidationSimple(b *testing.B) {

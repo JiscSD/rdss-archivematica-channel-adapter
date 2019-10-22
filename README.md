@@ -67,12 +67,10 @@ queue_send_main_addr = "arn:aws:sqs:us-east-2:444455556666:send"
 
 ### Environment variables
 
-Configuration from environment variables have precedence over file-based configuration. All environment variables follow the same naming scheme: `RDSS_ARCHIVEMATICA_ADAPTER_<SECTION>_<ATTRIBUTE>=<VALUE>`. Some valid examples are:
+Configuration from environment variables have precedence over file-based configuration. All environment variables follow the same naming scheme: `RDSS_ARCHIVEMATICA_ADAPTER_<SECTION>_<ATTRIBUTE>=<VALUE>`. The following is a valid example:
 
 - `RDSS_ARCHIVEMATICA_ADAPTER_LOGGING.LEVEL=DEBUG`<br />
   (section: `LOGGING`, attribute: `LEVEL`, value: `DEBUG`)
-- `RDSS_ARCHIVEMATICA_ADAPTER_ADAPTER.VALIDATION_MODE=strict`<br />
-  (section: `ADAPTER`, attribute: `VALIDATION_MODE`, value: `strict`)
 
 ### Service dependencies
 

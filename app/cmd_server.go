@@ -141,7 +141,6 @@ func server(logger logrus.FieldLogger, config *Config) (*adapter.Adapter, *adapt
 			sqsClient, config.Adapter.QueueRecvMainAddr,
 			snsClient, config.Adapter.QueueSendMainAddr, config.Adapter.QueueSendInvalidAddr, config.Adapter.QueueSendErrorAddr,
 			dynamodbClient, config.Adapter.RepositoryTable,
-			config.Adapter.ValidationMode,
 			incomingMessages)
 		if err != nil {
 			return nil, nil, err
