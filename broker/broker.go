@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	bErrors "github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/errors"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
+	bErrors "github.com/JiscSD/rdss-archivematica-channel-adapter/broker/errors"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"

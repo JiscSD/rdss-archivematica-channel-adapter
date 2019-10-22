@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message/specdata"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/integration/ammock"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message/specdata"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/integration/ammock"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"

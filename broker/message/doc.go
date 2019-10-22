@@ -2,7 +2,7 @@
 Package message provide types and functions to work with the RDSS API.
 
 This package reflect what is in the specification repository:
-https://github.com/JiscRDSS/rdss-message-api-specification.
+https://github.com/JiscSD/rdss-message-api-specification.
 
 These are the main steps that need to be taken after a new release is made in
 the specification repository:

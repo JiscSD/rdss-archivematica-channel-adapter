@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/xeipuuv/gojsonschema"
 
-	bErrors "github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/errors"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message/specdata"
+	bErrors "github.com/JiscSD/rdss-archivematica-channel-adapter/broker/errors"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message/specdata"
 )
 
 // Test if we can recreate `message.json` from Go and test if the result is the

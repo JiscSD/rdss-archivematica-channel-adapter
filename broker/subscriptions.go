@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
 )
 
 // MessageHandler is a function supplied by message subscribers.

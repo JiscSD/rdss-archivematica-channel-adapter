@@ -3,7 +3,7 @@ package broker
 import (
 	"context"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
 )
 
 // PreservationService publishes Preservation-type messages.

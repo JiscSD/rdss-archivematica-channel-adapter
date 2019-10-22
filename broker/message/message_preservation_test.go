@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message/specdata"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message/specdata"
 )
 
 // This is the one message type that we expect to be publishing from the adapter

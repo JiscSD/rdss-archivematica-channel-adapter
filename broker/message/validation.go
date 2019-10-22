@@ -13,7 +13,7 @@ import (
 	"github.com/xeipuuv/gojsonreference"
 	"github.com/xeipuuv/gojsonschema"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message/specdata"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message/specdata"
 )
 
 // ValidationMode determines the type of message validation performed.
@@ -275,7 +275,7 @@ func (f EmailFormatChecker) IsFormat(input interface{}) bool {
 	return emailFC.IsFormat(asString)
 }
 
-// See https://github.com/JiscRDSS/rdss-message-api-specification/commit/81af7c27c4adb10bba05ced436347789e67d6a14.
+// See https://github.com/JiscSD/rdss-message-api-specification/commit/81af7c27c4adb10bba05ced436347789e67d6a14.
 const regex = "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+\\.)*[0-9A-Za-z-]+)?(\\+([0-9A-Za-z-]+\\.)*[0-9A-Za-z-]+)?$"
 
 var versionRegexp = regexp.MustCompile(regex)

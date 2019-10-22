@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/amclient"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/amclient"
 )
 
 func ExampleWaitUntilStored() {

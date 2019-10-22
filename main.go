@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/app"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/app"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

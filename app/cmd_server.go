@@ -8,10 +8,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/adapter"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/s3"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/version"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/adapter"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/s3"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/version"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"

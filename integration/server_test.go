@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/integration/adapter"
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/integration/ammock"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/integration/adapter"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/integration/ammock"
 )
 
 const (

@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JiscRDSS/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
 )
 
 // TestVersion expects the nested repository (message-api-spec) to be pre-downloaded.
 // Use `git submodule update` to download the version set in the root repo.
 func TestVersion(t *testing.T) {
-	t.Skip("Not using tag v4.0.0 - https://github.com/JiscRDSS/rdss-message-api-specification/pull/124 not released yet")
+	t.Skip("Not using tag v4.0.0 - https://github.com/JiscSD/rdss-message-api-specification/pull/124 not released yet")
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)

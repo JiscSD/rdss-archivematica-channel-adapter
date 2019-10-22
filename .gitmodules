@@ -1,4 +1,4 @@
 [submodule "message-api-spec"]
 	path = message-api-spec
-	url = https://github.com/JiscRDSS/rdss-message-api-specification
+	url = https://github.com/JiscSD/rdss-message-api-specification
 	branch = master
