@@ -1,11 +1,10 @@
 module github.com/JiscSD/rdss-archivematica-channel-adapter
 
-go 1.12
+go 1.13
 
 require (
 	github.com/aws/aws-sdk-go v1.21.7
 	github.com/cenkalti/backoff/v3 v3.0.0
-	github.com/go-logfmt/logfmt v0.4.0
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/schema v1.1.0

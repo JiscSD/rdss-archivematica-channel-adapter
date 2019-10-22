@@ -1,4 +1,4 @@
-FROM golang:1.12.6-alpine3.10 as base
+FROM golang:1.13.3-alpine3.10 as base
 WORKDIR /src
 COPY go.mod .
 COPY go.sum .
