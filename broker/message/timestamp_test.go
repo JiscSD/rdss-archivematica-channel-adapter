@@ -58,6 +58,7 @@ func TestTimestampDecoding(t *testing.T) {
 		expected time.Time
 		wantErr  bool
 	}{
+		// Seen in the spec.
 		{
 			[]byte(`{"prop": "1997-07-16T19:20+01:00"}`),
 			"YYYY-MM-DDThh:mmTZD",
@@ -76,6 +77,20 @@ func TestTimestampDecoding(t *testing.T) {
 			time.Date(1997, time.July, 16, 19, 20, 30, 450000000, time.FixedZone("+0100", 3600)),
 			false,
 		},
+		// Seen in production.
+		{
+			[]byte(`{"prop": "2019-10-31T16:20:05.921+0000"}`),
+			"Accepted",
+			time.Date(2019, time.October, 31, 16, 20, 5, 921000000, time.UTC),
+			false,
+		},
+		{
+			[]byte(`{"prop": "2019-10-31T16:20:05.921+0100"}`),
+			"Accepted",
+			time.Date(2019, time.October, 31, 16, 20, 5, 921000000, time.FixedZone("+0100", 3600)),
+			false,
+		},
+		// Unexpected.
 		{
 			[]byte(`{"prop": null}`),
 			"Zero value",
