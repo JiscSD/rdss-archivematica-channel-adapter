@@ -31,6 +31,13 @@ func (t Timestamp) MarshalJSON() ([]byte, error) {
 	return []byte(str), nil
 }
 
+var timeOtherFormats = []string{
+	// Format described in the spec that time.RFC3339 does not cover.
+	"2006-01-02T15:04Z07:00",
+	// Format seen in the wild: "2019-10-31T16:20:05.921+0000".
+	"2006-01-02T15:04:05.999-0700",
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface.
 // The time is expected to be a quoted string in RFC 3339 format.
 func (t *Timestamp) UnmarshalJSON(data []byte) error {
@@ -49,12 +56,13 @@ func (t *Timestamp) UnmarshalJSON(data []byte) error {
 		*t = Timestamp(ts)
 		return nil
 	}
-	// Like time.RFC3339 without the second component which is accepted by RDSS.
-	const RFC3339woSec = "2006-01-02T15:04Z07:00"
-	ts, err = time.Parse(`"`+RFC3339woSec+`"`, str)
-	if err == nil {
-		*t = Timestamp(ts)
-		return nil
+	// Other formats.
+	for _, format := range timeOtherFormats {
+		ts, err = time.Parse(`"`+format+`"`, str)
+		if err == nil {
+			*t = Timestamp(ts)
+			return nil
+		}
 	}
 	return err
 }
