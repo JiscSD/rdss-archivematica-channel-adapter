@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
+	"github.com/JiscSD/rdss-archivematica-channel-adapter/internal/testutil"
 )
 
 func TestResearchObjectBase_ToJSON(t *testing.T) {
@@ -96,4 +97,21 @@ func TestResearchObjectBase_InferResearchObject(t *testing.T) {
 	if ro.ObjectTitle != "title" {
 		t.Fatal("title is not defined properly")
 	}
+}
+
+func TestResearchObjectBase_InferResearchObject_WithSamples(t *testing.T) {
+	const f = "integration/testdata/thesis_dissertation_create_request.json"
+	blob := testutil.Fixture(t, f)
+	msg := &message.Message{}
+	if err := json.Unmarshal(blob, msg); err != nil {
+		t.Fatalf("Message %s cannot not be decoded: %v", f, err)
+	}
+	req, err := msg.MetadataCreateRequest()
+	if err != nil {
+		t.Fatalf("MetadataCreateRequest() failed with message %s: %v", f, err)
+	}
+
+	// We confirm that it is possible to infer the research object off the
+	// different submodels without errors.
+	_ = req.InferResearchObject()
 }
