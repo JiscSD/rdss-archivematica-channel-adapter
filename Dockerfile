@@ -1,4 +1,4 @@
-FROM golang:1.13.3-alpine3.10 as base
+FROM golang:1.14.2-alpine3.11 as base
 WORKDIR /src
 COPY go.mod .
 COPY go.sum .
@@ -10,7 +10,7 @@ COPY . .
 RUN make test vet
 RUN make build
 
-FROM alpine:3.10
+FROM alpine:3.11
 WORKDIR /var/lib/archivematica
 COPY --from=builder /src/rdss-archivematica-channel-adapter .
 RUN apk --no-cache add ca-certificates
