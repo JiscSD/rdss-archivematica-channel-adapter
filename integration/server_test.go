@@ -51,7 +51,7 @@ var (
 		fmt.Sprintf("RDSS_ARCHIVEMATICA_ADAPTER_AWS.S3_ENDPOINT=%s", awsS3Endpoint),
 		fmt.Sprintf("RDSS_ARCHIVEMATICA_ADAPTER_AWS.SQS_ENDPOINT=%s", awsSQSEndpoint),
 		fmt.Sprintf("RDSS_ARCHIVEMATICA_ADAPTER_AWS.SNS_ENDPOINT=%s", awsSNSEndpoint),
-		fmt.Sprintf("AWS_S3_FORCE_PATH_STYLE=true"),
+		"AWS_S3_FORCE_PATH_STYLE=true",
 		fmt.Sprintf("AWS_REGION=%s", awsRegion),
 		fmt.Sprintf("AWS_ACCESS_KEY=%s", awsAccessKeyID),
 		fmt.Sprintf("AWS_SECRET_KEY=%s", awsSecretAccessKey),
