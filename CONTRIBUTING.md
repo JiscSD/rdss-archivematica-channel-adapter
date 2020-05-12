@@ -16,7 +16,7 @@ This section describes how to build the application from source.
 
 ### Prerequisites
 
-Install [Go 1.13][1] or newer.
+Install [Go 1.14][1] or newer.
 
 ### Fetch the source
 
