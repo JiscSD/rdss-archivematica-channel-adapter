@@ -1,0 +1,242 @@
+{
+    "messageHeader": {
+        "messageId": "5f3daf70-93a0-11ea-ab12-0800200c9a66",
+        "messageClass": "Command",
+        "messageType": "MetadataCreate",
+        "returnAddress": "A free text string",
+        "messageTimings": {
+            "publishedTimestamp": "2004-08-01T10:00:00-00:00",
+            "expirationTimestamp": "2004-08-01T10:00:00-00:00"
+        },
+        "messageSequence": {
+            "sequence": "15484b80-938e-11ea-ab12-0800200c9a66",
+            "position": 1,
+            "total": 1
+        },
+        "messageHistory": [
+            {
+                "machineId": "A free text string",
+                "machineAddress": "machine.example.com",
+                "timestamp": "2004-08-01T10:00:00-00:00"
+            }
+        ],
+        "version": "4.0.0",
+        "generator": "A free text string",
+        "tenantJiscID": 0
+    },
+    "messageBody": {
+        "objectUUID": "5680e8e0-28a5-4b20-948e-fd0d08781e0b",
+        "objectTitle": "A free text string",
+        "objectPersonRole": [
+            {
+                "person": {
+                    "personUUID": "27811a4c-9cb5-4e6d-a069-5c19288fae58",
+                    "personIdentifier": [
+                        {
+                            "personIdentifierValue": "A free text string",
+                            "personIdentifierType": "ORCID"
+                        }
+                    ],
+                    "personHonorificPrefix": "A free text string",
+                    "personGivenNames": "A free text string",
+                    "personFamilyNames": "A free text string",
+                    "personHonorificSuffix": "A free text string",
+                    "personMail": "person@net",
+                    "personOrganisationUnit": {
+                        "organisationUnitUUID": "28be7f16-0e70-461f-a2db-d9d7c64a8f17",
+                        "organisationUnitName": "A free text string",
+                        "organisation": {
+                            "organisationJiscId": 1,
+                            "organisationName": "A free text string",
+                            "organisationType": "higherEducation",
+                            "organisationAddress": "A free text string"
+                        }
+                    }
+                },
+                "role": "author"
+            }
+        ],
+        "objectDescription": [
+            {
+                "descriptionValue": "A free text string",
+                "descriptionType": "abstract"
+            }
+        ],
+        "objectRights": {
+            "rightsStatement": [
+                "A free text string"
+            ],
+            "rightsHolder": [
+                "A free text string"
+            ],
+            "licence": [
+                {
+                    "licenceName": "A free text string",
+                    "licenceIdentifier": "A free text string",
+                    "licenseStartDate": "2018-01-01T00:00:00-00:00",
+                    "licenseEndDate": "2018-12-31T23:59:59-00:00"
+                }
+            ],
+            "access": [
+                {
+                    "accessType": "safeguarded",
+                    "accessStatement": "A free text string"
+                }
+            ]
+        },
+        "objectDate": [
+            {
+                "dateValue": "2002-10-02T10:00:00-05:00",
+                "dateType": "awarded"
+            },
+            {
+                "dateValue": "2002-10-02T10:00:00-05:00",
+                "dateType": "accepted"
+            }
+        ],
+        "objectKeyword": [
+            "A free text string"
+        ],
+        "objectCategory": [
+            "A free text string"
+        ],
+        "objectResourceType": "thesisDissertation",
+        "objectValue": "normal",
+        "objectIdentifier": [
+            {
+                "identifierValue": "A free text string",
+                "identifierType": "URL"
+            }
+        ],
+        "objectRelatedIdentifier": [
+            {
+                "identifier": {
+                    "identifierValue": "A free text string",
+                    "identifierType": "DOI"
+                },
+                "relationType": "cites"
+            }
+        ],
+        "objectOrganisationRole": [
+            {
+                "organisation": {
+                    "organisationJiscId": 1,
+                    "organisationName": "A free text string",
+                    "organisationType": "higherEducation",
+                    "organisationAddress": "A free text string"
+                },
+                "role": "awardingInstitution"
+            },
+            {
+                "organisation": {
+                    "organisationJiscId": 1,
+                    "organisationName": "A free text string",
+                    "organisationType": "higherEducation",
+                    "organisationAddress": "A free text string"
+                },
+                "role": "hostingInstitution"
+            }
+        ],
+        "objectFile": [
+            {
+                "fileUUID": "eb6ecd70-939c-11ea-ab12-0800200c9a66",
+                "fileIdentifier": "A free text string",
+                "fileName": "test.txt",
+                "fileSize": 14,
+                "fileLabel": "A free text string",
+                "fileDateCreated": "2002-10-02T10:00:00-05:00",
+                "fileRights": {
+                    "rightsStatement": [
+                        "A free text string"
+                    ],
+                    "rightsHolder": [
+                        "A free text string"
+                    ],
+                    "licence": [
+                        {
+                            "licenceName": "A free text string",
+                            "licenceIdentifier": "A free text string",
+                            "licenseStartDate": "2018-01-01T00:00:00-00:00",
+                            "licenseEndDate": "2050-12-31T23:59:59-00:00"
+                        }
+                    ],
+                    "access": [
+                        {
+                            "accessType": "open",
+                            "accessStatement": "A free text string"
+                        }
+                    ]
+                },
+                "fileChecksum": [
+                    {
+                        "checksumUUID": "dfe13100-939c-11ea-ab12-0800200c9a66",
+                        "checksumType": "sha256",
+                        "checksumValue": "02cbbe1fb31609fc4928de008c1710212d41c1fb688e3c3b19071cd9fc10df70"
+                    }
+                ],
+                "fileFormatType": "A free text string",
+                "fileCompositionLevel": "A free text string",
+                "fileHasMimeType": true,
+                "fileDateModified": [
+                    "2002-10-02T10:00:00-05:00"
+                ],
+                "filePuid": [
+                    "A free text string"
+                ],
+                "fileUse": "originalFile",
+                "filePreservationEvent": "A free text string",
+                "fileUploadStatus": "uploadComplete",
+                "fileStorageStatus": "online",
+                "fileLastDownloaded": "2002-10-02T10:00:00-05:00",
+                "fileTechnicalAttribute": [
+                    "A free text string"
+                ],
+                "fileStorageLocation": "s3://rdss-filestorage-dev/0/2020/1/31/f543b720-9f5e-4bb9-955a-efe412b36977/test.txt",
+                "fileStoragePlatform": {
+                    "storagePlatformUUID": "44c71bc0-938e-11ea-ab12-0800200c9a66",
+                    "storagePlatformName": "S3",
+                    "storagePlatformType": "S3",
+                    "storagePlatformCost": "A free text string"
+                }
+            }
+        ],
+        "language": [
+            "eng",
+            "grc"
+        ],
+        "coverage": {
+            "geospatialCoverage": [
+                {
+                    "geolocationPoint": {
+                        "latitude": 55.856016,
+                        "longitude": -4.295604
+                    },
+                    "geolocationPolygon": [
+                        {
+                            "latitude": 54.402258,
+                            "longitude": -4.739353
+                        },
+                        {
+                            "latitude": 56.032946,
+                            "longitude": -0.665635
+                        },
+                        {
+                            "latitude": 61.077846,
+                            "longitude": -0.414868
+                        },
+                        {
+                            "latitude": 57.304151,
+                            "longitude": -9.399388
+                        }
+                    ],
+                    "geolocationPlace": "A free text string",
+                    "coordinateReferenceSystem": "WGS 84"
+                }
+            ],
+            "temporalCoverageStart": "2012-06-13T00:00:00-05:00",
+            "temporalCoverageEnd": "2018-01-02T00:00:00-05:00"
+        },
+        "qualificationLevel": "A free text string",
+        "qualificationName": "A free text string"
+    }
+}
