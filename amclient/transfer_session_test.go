@@ -209,11 +209,11 @@ func TestTransferSession_ChecksumSet(t *testing.T) {
 	fs := afero.Afero{Fs: afero.NewBasePathFs(afero.NewMemMapFs(), "/")}
 	set := NewChecksumSet("md5", fs)
 	set.Add("bird-sounds.mp3", "92c8ab01cecceb3bf0789c2cd8c7415a")
-	set.Add("woodpigeon-pic.jpg", "53a64110e067b14394c142c09571bea0")
+	set.Add("woodpigeon pic.jpg", "53a64110e067b14394c142c09571bea0")
 
 	var (
 		want1 = `92c8ab01cecceb3bf0789c2cd8c7415a bird-sounds.mp3
-53a64110e067b14394c142c09571bea0 woodpigeon-pic.jpg
+53a64110e067b14394c142c09571bea0 woodpigeon pic.jpg
 `
 		want2 = `53a64110e067b14394c142c09571bea0 woodpigeon-pic.jpg
 92c8ab01cecceb3bf0789c2cd8c7415a bird-sounds.mp3

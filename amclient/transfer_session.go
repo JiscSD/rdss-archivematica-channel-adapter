@@ -1,6 +1,7 @@
 package amclient
 
 import (
+	"bufio"
 	"context"
 	"encoding/csv"
 	"fmt"
@@ -383,13 +384,20 @@ func (c *ChecksumSet) Write() error {
 		return err
 	}
 	defer f.Close()
-	writer := csv.NewWriter(f)
-	writer.Comma = sep
-	writer.UseCRLF = false
-	defer writer.Flush()
 
+	buf := bufio.NewWriter(f)
+	defer buf.Flush()
 	for name, sum := range c.values {
-		if err := writer.Write([]string{sum, name}); err != nil {
+		if _, err := buf.WriteString(sum); err != nil {
+			return err
+		}
+		if _, err := buf.WriteRune(sep); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(name); err != nil {
+			return err
+		}
+		if err := buf.WriteByte('\n'); err != nil {
 			return err
 		}
 	}
