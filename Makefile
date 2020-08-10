@@ -29,10 +29,6 @@ testrace:
 	@$(GOTEST) -short -race ./...
 
 test-integration: install
-	docker-compose --file ./integration/docker-compose.yml up -d --force-recreate
-	docker-compose --file ./integration/docker-compose.yml ps
-	integration/scripts/wait.sh
-	integration/scripts/provision.sh
 	$(GOTEST) -v ./integration/... -valsvc=$(SCHEMA_SERVICE_ADDR)
 
 fmt:

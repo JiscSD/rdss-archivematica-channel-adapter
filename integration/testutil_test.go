@@ -101,36 +101,6 @@ func purgeQueue(t *testing.T, queueURL string) {
 	}
 }
 
-func purgeDynamoDBTable(t *testing.T, table string, keyName string) {
-	t.Helper()
-
-	// Assuming that all entries fit in a single scan.
-	res, err := awsDynamoDBClient.Scan(&dynamodb.ScanInput{
-		TableName: aws.String(table),
-	})
-	if err != nil {
-		t.Fatal("Cannot scan DynamoDB table:", err)
-	}
-
-	reqs := []*dynamodb.WriteRequest{}
-	for _, item := range res.Items {
-		val := item[keyName]
-		reqs = append(reqs, &dynamodb.WriteRequest{
-			DeleteRequest: &dynamodb.DeleteRequest{
-				Key: map[string]*dynamodb.AttributeValue{
-					keyName: val,
-				},
-			},
-		})
-	}
-
-	awsDynamoDBClient.BatchWriteItem(&dynamodb.BatchWriteItemInput{
-		RequestItems: map[string][]*dynamodb.WriteRequest{
-			table: reqs,
-		},
-	})
-}
-
 func newMetadataCreateMessage(t *testing.T, tenantJiscID uint64, objectTitle string, storagePlatform message.StorageTypeEnum, fileName, fileLocation, fileMD5 string, fileSize int) string {
 	t.Helper()
 	blob := testutil.SpecFixture(t, "messages/example_message.json")

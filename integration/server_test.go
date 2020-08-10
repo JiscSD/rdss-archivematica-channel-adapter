@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/JiscSD/rdss-archivematica-channel-adapter/broker/message"
@@ -12,25 +14,25 @@ import (
 )
 
 const (
-	awsAccountID       = "123456789012"
+	awsAccountID       = "000000000000"
 	awsAccessKeyID     = "123"
 	awsSecretAccessKey = "xyz"
 	awsTokenKey        = ""
 	awsRegion          = "us-east-1"
 
-	awsS3Endpoint       = "http://localhost:4572"
-	awsDynamoDBEndpoint = "http://localhost:4569"
-	awsSQSEndpoint      = "http://localhost:4576"
-	awsSNSEndpoint      = "http://localhost:4575"
+	awsS3Endpoint       = "http://localhost:4566"
+	awsDynamoDBEndpoint = "http://localhost:4566"
+	awsSQSEndpoint      = "http://localhost:4566"
+	awsSNSEndpoint      = "http://localhost:4566"
 
 	awsBucket          = "bucket"
 	awsRepositoryTable = "rdss_archivematica_adapter_local_data_repository"
 	awsProcessingTable = "rdss_archivematica_adapter_processing_state"
 	awsRegistryTable   = "rdss_archivematica_adapter_registry"
-	awsQueueMain       = "http://localhost:4576/queue/main"
-	awsTopicMain       = "arn:aws:sns:us-east-1:123456789012:main"
-	awsTopicInvalid    = "arn:aws:sns:us-east-1:123456789012:invalid"
-	awsTopicError      = "arn:aws:sns:us-east-1:123456789012:error"
+	awsQueueMain       = "http://localhost:4566/queue/main"
+	awsTopicMain       = "arn:aws:sns:us-east-1:000000000000:main"
+	awsTopicInvalid    = "arn:aws:sns:us-east-1:000000000000:invalid"
+	awsTopicError      = "arn:aws:sns:us-east-1:000000000000:error"
 )
 
 var (
@@ -63,6 +65,50 @@ var (
 	flagValidationServiceAddr = flag.String("valsvc", "", "Address of the Schema Service HTTP API")
 )
 
+// setup spins up LocakStack via Docker compose. Once it's up, it provisions
+// all resources needed such as SQS queues, SNS topics, etc...
+//
+// Purging resources after each test run problematic and I believe that's a
+// problem specific to LocalStack, not reproducible against AWS resources.
+// This is what we used to do before this setup function was introduced:
+//
+//func cleanUp(t *testing.T) {
+//	purgeQueue(t, awsQueueMain)
+//	purgeDynamoDBTable(t, awsRepositoryTable, "ID")
+//	purgeDynamoDBTable(t, awsProcessingTable, "objectUUID")
+//	purgeDynamoDBTable(t, awsRegistryTable, "tenantJiscID")
+//}
+func setup(t *testing.T) {
+	fmt.Printf("Resetting LocalStack resources...")
+
+	cmd := exec.Command("docker-compose", "--file=./docker-compose.yml", "up", "-d", "--force-recreate")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		fmt.Printf(" failed!\n")
+		fmt.Println(string(out))
+		os.Exit(1)
+	}
+
+	cmd = exec.Command("./scripts/wait.sh")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		fmt.Printf(" failed!\n")
+		fmt.Println(string(out))
+		os.Exit(1)
+	}
+
+	cmd = exec.Command("./scripts/provision.sh")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		fmt.Printf(" failed!\n")
+		fmt.Println(string(out))
+		os.Exit(1)
+	}
+
+	fmt.Printf(" done!\n")
+
+	t.Cleanup(func() {
+		// In case we need it.
+	})
+}
+
 // TestValidation confirms that the adapter reacts to invalid messages by
 // sending them to the corresponding invalid message queue.
 func TestValidation(t *testing.T) {
@@ -72,7 +118,7 @@ func TestValidation(t *testing.T) {
 	if *flagValidationServiceAddr == "" {
 		t.Skip("skipping: needs -valsvc flag")
 	}
-	defer cleanUp(t)
+	setup(t)
 
 	var env = serverEnvironment
 	if *flagValidationServiceAddr != "" {
@@ -81,7 +127,6 @@ func TestValidation(t *testing.T) {
 	}
 
 	s := subscriber(t)
-	defer s.cleanUp()
 
 	invalidMessage := `{
   "messageHeader": {
@@ -110,7 +155,7 @@ func TestConversion(t *testing.T) {
 	if *flagValidationServiceAddr == "" {
 		t.Skip("skipping: needs -valsvc flag")
 	}
-	defer cleanUp(t)
+	setup(t)
 
 	var env = serverEnvironment
 	if *flagValidationServiceAddr != "" {
@@ -152,7 +197,7 @@ func TestLocalDataRepository(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	defer cleanUp(t)
+	setup(t)
 
 	s := subscriber(t)
 	defer s.cleanUp()
@@ -188,7 +233,7 @@ func TestPipelineRouting(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	defer cleanUp(t)
+	setup(t)
 
 	s := subscriber(t)
 	defer s.cleanUp()
@@ -226,12 +271,4 @@ func TestPipelineRouting(t *testing.T) {
 
 	pipe2.AssertAPINotUsed()
 	pipe2.AssertTransferDirIsEmpty()
-}
-
-// cleanUp attempts to leave the resources in its initial state.
-func cleanUp(t *testing.T) {
-	purgeQueue(t, awsQueueMain)
-	purgeDynamoDBTable(t, awsRepositoryTable, "ID")
-	purgeDynamoDBTable(t, awsProcessingTable, "objectUUID")
-	purgeDynamoDBTable(t, awsRegistryTable, "tenantJiscID")
 }
