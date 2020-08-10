@@ -11,8 +11,8 @@ tools:
 	# Install tools listed in tools.go.
 	$(GOINSTALL) golang.org/x/tools/cmd/cover
 
-	# Install golangci-lint.
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.21.0
+	# Install golangci-lint (using sudo in Travis CI).
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b $(shell go env GOPATH)/bin v1.30.0
 
 build:
 	@echo ${VERSION}
