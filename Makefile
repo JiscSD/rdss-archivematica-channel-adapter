@@ -4,6 +4,7 @@ GOCMD = go
 GOBUILD = $(GOCMD) build
 GOINSTALL = $(GOCMD) install
 GOTEST = $(GOCMD) test
+GOBIN = $(shell go env GOPATH)/bin
 
 default: testrace fmt lint
 
@@ -12,7 +13,7 @@ tools:
 	$(GOINSTALL) golang.org/x/tools/cmd/cover
 
 	# Install golangci-lint (using sudo in Travis CI).
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b $(shell go env GOPATH)/bin v1.30.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b ${GOBIN} v1.30.0
 
 build:
 	@echo ${VERSION}
@@ -35,7 +36,7 @@ fmt:
 	@test -z "$(shell gofmt -l -d -e . | tee /dev/stderr)"
 
 lint:
-	@golangci-lint run
+	@${GOBIN}/golangci-lint run
 
 cover:
 	@hack/coverage.sh
