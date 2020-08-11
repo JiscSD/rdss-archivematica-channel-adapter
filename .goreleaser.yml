@@ -14,8 +14,6 @@ builds:
   # See https://github.com/golang/go/issues/26492 for more.
   - CGO_ENABLED=0
   goos:
-  - darwin
-  - windows
   - linux
   goarch:
   - amd64
