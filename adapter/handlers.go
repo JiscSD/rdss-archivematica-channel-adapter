@@ -86,7 +86,7 @@ func (c *Adapter) handleMetadataUpdateRequest(msg *message.Message) error {
 	}
 	amClient := c.registry.Get(msg.MessageHeader.TenantJiscID)
 	if amClient == nil {
-		return errors.Wrap(UnknownTenantErr, string(msg.MessageHeader.TenantJiscID))
+		return errors.Wrap(UnknownTenantErr, fmt.Sprint(msg.MessageHeader.TenantJiscID))
 	}
 	researchObject := body.InferResearchObject()
 	// Determine if the message is pointing to a previous dataset.

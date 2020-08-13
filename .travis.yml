@@ -27,7 +27,7 @@ cache:
 jobs:
   include:
     - os: linux
-      go: "1.14.x"
+      go: "1.15.x"
       env:
         - TEST_TYPE=unit
       script:
@@ -38,7 +38,7 @@ jobs:
         - make lint
         - hack/coverage.sh --coveralls
     - os: linux
-      go: "1.14.x"
+      go: "1.15.x"
       env:
         - TEST_TYPE=integration
       services:
