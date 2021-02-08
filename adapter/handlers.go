@@ -265,12 +265,38 @@ func describeDataset(t *amclient.TransferSession, f *message.ResearchObject) {
 
 	for _, item := range f.ObjectPersonRole {
 		if item.Role == message.PersonRoleEnum_dataCreator {
-			t.Describe("dc.creatorName", item.Person.PersonGivenNames)
+			t.Describe(
+				"dc.creatorName",
+				normalizeNames(
+					item.Person.PersonGivenNames,
+					item.Person.PersonFamilyNames,
+				),
+			)
 		}
 		if item.Role == message.PersonRoleEnum_publisher {
-			t.Describe("dc.publisher", item.Person.PersonGivenNames)
+			t.Describe(
+				"dc.publisher",
+				normalizeNames(
+					item.Person.PersonGivenNames,
+					item.Person.PersonFamilyNames,
+				),
+			)
 		}
 	}
+
+}
+
+// normalizeNames will return a "familyNames, givenNames" string
+// construct if both values are available. Else, it will use the data
+// given to return either "givenNames" or "familyNames".
+func normalizeNames(givenNames string, familyNames string) string {
+	if familyNames == "" {
+		return givenNames
+	}
+	if givenNames == "" {
+		return familyNames
+	}
+	return fmt.Sprintf("%s, %s", familyNames, givenNames)
 }
 
 // describeFile maps properties from an intellectual asset into a CSV entry
