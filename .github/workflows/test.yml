@@ -38,6 +38,8 @@ jobs:
         fi
     - name: Lint code
       run: make tools lint
+    - name: Coverage
+      run: make cover
     - name: Run tests
       run: make testrace
     - name: Run integration tests
