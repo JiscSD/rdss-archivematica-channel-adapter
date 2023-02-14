@@ -3,7 +3,7 @@ module github.com/JiscSD/rdss-archivematica-channel-adapter
 go 1.15
 
 require (
-	github.com/aws/aws-sdk-go v1.33.19
+	github.com/aws/aws-sdk-go v1.34.0
 	github.com/cenkalti/backoff/v3 v3.2.2
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/google/uuid v1.1.1
