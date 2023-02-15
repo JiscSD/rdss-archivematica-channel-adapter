@@ -12,8 +12,7 @@ require (
 	github.com/oklog/run v1.1.0
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.7.1
-	github.com/prometheus/common v0.11.1 // indirect
+	github.com/prometheus/client_golang v1.11.1
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/afero v1.3.3
 	github.com/spf13/cast v1.3.1 // indirect
@@ -23,9 +22,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.5.1
-	golang.org/x/sys v0.0.0-20200805065543-0cf7623e9dbd // indirect
 	golang.org/x/text v0.3.3 // indirect
 	golang.org/x/tools v0.0.0-20200804234916-fec4f28ebb08
-	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
