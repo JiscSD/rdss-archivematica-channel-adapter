@@ -23,9 +23,8 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.5.1
-	golang.org/x/sys v0.0.0-20200805065543-0cf7623e9dbd // indirect
-	golang.org/x/text v0.3.3 // indirect
-	golang.org/x/tools v0.0.0-20200804234916-fec4f28ebb08
+	golang.org/x/text v0.3.8 // indirect
+	golang.org/x/tools v0.1.12
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
